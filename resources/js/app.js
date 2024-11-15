@@ -5,7 +5,6 @@ import './bootstrap';
 import { CkeditorPlugin } from '@ckeditor/ckeditor5-vue';
 import { initializeSocket } from './plugins/socket';
 
-// Sử dụng window.baseURL đã thiết lập từ file Blade
 const baseURL = window.baseURL;
 
 // Cấu hình axios với baseURL lấy từ window.baseURL
@@ -24,19 +23,6 @@ axiosInstance.interceptors.request.use(config => {
   return Promise.reject(error);
 });
 
-// Interceptor để kiểm tra mã trạng thái của phản hồi
-axiosInstance.interceptors.response.use(
-  response => response,
-  error => {
-    if (error.response && error.response.status === 401) {
-      // Xóa token nếu có
-      localStorage.removeItem('token');
-      // Chuyển hướng về trang đăng nhập
-      router.push('/login');
-    }
-    return Promise.reject(error);
-  }
-);
 
 const app = createApp(App);
 // Kiểm tra xem người dùng đã đăng nhập chưa
@@ -46,13 +32,35 @@ let socket;
 if (token) {
   try {
     const profile = await axiosInstance.get('/api/get-profile');
-    const userID = profile.data.id
+    const userID = profile.data.id;
+
+    // Khởi tạo socket khi user đã đăng nhập
     socket = initializeSocket(userID);
     app.provide('$socket', socket);
   } catch (error) {
     console.error("Failed to load profile:", error);
   }
 }
+// Interceptor để kiểm tra mã trạng thái của phản hồi
+axiosInstance.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response && error.response.status === 401) {
+      // Xóa token nếu có
+      localStorage.removeItem('token');
+      // Ngắt kết nối socket nếu đang kết nối
+      if (socket) {
+        socket.disconnect();
+        socket = null;
+        console.log('Socket connection terminated due to 401 response.');
+      }
+
+      // Chuyển hướng về trang đăng nhập
+      router.push('/login');
+    }
+    return Promise.reject(error);
+  }
+);
 
 app.provide('$axios', axiosInstance);
 app.use(router);

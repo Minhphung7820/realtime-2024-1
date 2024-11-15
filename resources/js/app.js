@@ -31,12 +31,13 @@ let socket;
 
 if (token) {
   try {
-    const profile = await axiosInstance.get('/api/get-profile');
-    const userID = profile.data.id;
+    const getProfile = await axiosInstance.get('/api/get-profile');
+    const userID = getProfile.data.id;
 
     // Khởi tạo socket khi user đã đăng nhập
     socket = initializeSocket(userID);
     app.provide('$socket', socket);
+    app.provide('$profile', getProfile.data);
   } catch (error) {
     console.error("Failed to load profile:", error);
   }

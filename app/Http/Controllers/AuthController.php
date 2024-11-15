@@ -95,6 +95,19 @@ class AuthController extends Controller
         return response()->json(auth()->guard('api')->user());
     }
 
+    public function setLastOnline(Request $request)
+    {
+        try {
+            return DB::transaction(function () use ($request) {
+                return User::where('id', $request['userID'])->update(['last_active' => now()]);
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     // public function sendOtp(Request $request)
     // {
     //     try {

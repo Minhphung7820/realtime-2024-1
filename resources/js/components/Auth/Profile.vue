@@ -18,7 +18,7 @@
 
 <script>
 export default {
-  inject: ['$axios','$socket'],
+  inject: ['$axios','$socket','$profile'],
   data() {
     return {
       user: {},
@@ -28,8 +28,7 @@ export default {
   async created() {
     this.isLoading = true; // Bật trạng thái loading khi bắt đầu tải dữ liệu
     try {
-      const response = await this.$axios.get('/api/get-profile');
-      this.user = response.data;
+      this.user = this.$profile;
     } catch (error) {
       console.error("Failed to load profile:", error);
     } finally {

@@ -3,6 +3,7 @@ import App from './App.vue';
 import router from './router';
 import './bootstrap';
 import { CkeditorPlugin } from '@ckeditor/ckeditor5-vue';
+import { initializeSocket } from './plugins/socket';
 
 // Sử dụng window.baseURL đã thiết lập từ file Blade
 const baseURL = window.baseURL;
@@ -38,6 +39,21 @@ axiosInstance.interceptors.response.use(
 );
 
 const app = createApp(App);
+// Kiểm tra xem người dùng đã đăng nhập chưa
+const token = localStorage.getItem('token');
+let socket;
+
+if (token) {
+  try {
+    const profile = await axiosInstance.get('/api/get-profile');
+    const userID = profile.data.id
+    socket = initializeSocket(userID);
+    app.provide('$socket', socket);
+  } catch (error) {
+    console.error("Failed to load profile:", error);
+  }
+}
+
 app.provide('$axios', axiosInstance);
 app.use(router);
 app.use(CkeditorPlugin);

@@ -1,7 +1,7 @@
 <template>
-  <div class="message-box flex flex-col h-full p-4">
-    <div class="message-header bg-gray-100 p-2 border-b">
-      <h3 class="text-lg font-bold">Chat</h3>
+  <div class="message-box flex flex-col h-full p-2 sm:p-4">
+    <div class="message-header bg-gray-100 p-2 sm:p-4 border-b">
+      <h3 class="text-base sm:text-lg font-bold">Chat</h3>
     </div>
     <div class="message-content flex-1 overflow-y-auto p-2 max-h-96">
       <div v-for="(msg, index) in messages" :key="index" class="mb-2">
@@ -24,9 +24,9 @@
         @input="onTyping"
         type="text"
         placeholder="Nhập tin nhắn..."
-        class="flex-1 p-2 border rounded"
+        class="flex-1 p-2 sm:p-3 border rounded text-sm sm:text-base"
       />
-      <button @click="sendMessage" class="ml-2 px-4 py-2 bg-blue-500 text-white rounded">
+      <button @click="sendMessage" class="ml-2 px-2 sm:px-4 py-1 sm:py-2 bg-blue-500 text-white rounded text-sm sm:text-base">
         Gửi
       </button>
     </div>
@@ -39,7 +39,7 @@ export default {
     return {
       messages: [
         { sender: 'me', text: 'Xin chào!' },
-        { sender: 'friend', text: 'Chào bạn àkljaglhjhsdjfjsdgjsgdfjhsgdjjsdgjs!' },
+        { sender: 'friend', text: 'Chào bạn àkljagl!' },
       ],
       newMessage: '',
       isTyping: false,
@@ -86,22 +86,31 @@ export default {
 
 .my-message {
   background-color: #d1e7ff;
-  padding: 8px;
+  padding: 6px 8px;
   border-radius: 8px;
   display: inline-block;
-  max-width: 70%;
+  max-width: 85%; /* Tăng chiều rộng tối đa cho màn hình nhỏ */
   text-align: right;
   word-wrap: break-word;
+  font-size: 0.875rem; /* text-sm */
 }
 
 .friend-message {
   background-color: #e2e3e5;
-  padding: 8px;
+  padding: 6px 8px;
   border-radius: 8px;
   display: inline-block;
-  max-width: 70%;
+  max-width: 85%; /* Tăng chiều rộng tối đa cho màn hình nhỏ */
   text-align: left;
   word-wrap: break-word;
+  font-size: 0.875rem; /* text-sm */
+}
+
+@media (min-width: 640px) {
+  .my-message, .friend-message {
+    max-width: 70%; /* Giảm chiều rộng tối đa cho màn hình lớn hơn */
+    font-size: 1rem; /* text-base */
+  }
 }
 
 .typing-indicator {

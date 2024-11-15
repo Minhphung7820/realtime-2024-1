@@ -1,25 +1,24 @@
 <template>
-  <div class="conversation-list bg-gray-100 p-4">
+  <div class="conversation-list bg-gray-100 p-2 sm:p-4">
     <h3 class="font-bold text-lg mb-2">Cuộc trò chuyện</h3>
     <ul>
-      <li v-for="(conversation, index) in conversations" :key="index" class="conversation-item flex items-center p-3 border-b cursor-pointer hover:bg-gray-200">
+      <li v-for="(conversation, index) in conversations" :key="index" class="conversation-item flex items-center p-2 sm:p-3 border-b cursor-pointer hover:bg-gray-200">
         <!-- Avatar -->
-        <img :src="conversation.avatar" alt="Avatar" class="w-10 h-10 rounded-full mr-3" />
+        <img :src="conversation.avatar" alt="Avatar" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 sm:mr-3" />
 
         <!-- Nội dung trò chuyện -->
-        <div class="flex-1">
+        <div class="flex-1 max-w-xs">
           <div class="flex justify-between items-center">
-            <h4 class="font-semibold">{{ conversation.name }}</h4>
-            <!-- Hiển thị số tin nhắn chưa đọc -->
-            <span v-if="conversation.unread > 0" class="unread-count text-xs text-white bg-red-500 rounded-full px-2 py-0.5">
+            <h4 class="font-semibold text-sm sm:text-base">{{ conversation.name }}</h4>
+            <span v-if="conversation.unread > 0" class="unread-count text-xs text-white bg-red-500 rounded-full px-1.5 sm:px-2 py-0.5">
               {{ conversation.unread > 5 ? '5+' : conversation.unread }}
             </span>
           </div>
-          <p class="text-gray-500 text-sm truncate">{{ conversation.lastMessage }}</p>
+          <p class="text-gray-500 text-xs sm:text-sm truncate">{{ conversation.lastMessage }}</p>
         </div>
 
         <!-- Trạng thái online/offline -->
-        <span :class="conversation.isOnline ? 'bg-green-500' : 'bg-gray-400'" class="status-dot w-3 h-3 rounded-full ml-3"></span>
+        <span :class="conversation.isOnline ? 'bg-green-500' : 'bg-gray-400'" class="status-dot w-2 h-2 sm:w-3 sm:h-3 rounded-full ml-2 sm:ml-3"></span>
       </li>
     </ul>
   </div>

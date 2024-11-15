@@ -1,16 +1,15 @@
 <template>
-    <div>
+    <div class="app-container">
         <!-- Thanh điều hướng -->
-        <nav>
+        <nav class="header">
             <router-link to="/">Home</router-link>
-            <!-- <router-link v-if="isAuthenticated" to="/get-profile">Get Profile</router-link> -->
             <router-link v-if="isAuthenticated" to="/get-profile">Get Profile</router-link>
             <router-link v-if="isAuthenticated" to="/chat">Chat</router-link>
             <router-link v-else to="/login">Login</router-link>
         </nav>
 
         <!-- Đây là nơi Vue Router sẽ hiển thị các component theo route -->
-        <router-view></router-view>
+        <router-view class="content"></router-view>
     </div>
 </template>
 
@@ -27,7 +26,6 @@ export default {
         this.checkAuthentication();
     },
     watch: {
-        // Không cần `isLoading` khi route thay đổi
         '$route'() {
             this.checkAuthentication();
         }
@@ -42,20 +40,31 @@ export default {
 </script>
 
 <style scoped>
-/* Phong cách CSS cho App.vue */
-nav {
+/* Đặt cấu trúc flex cho App.vue */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Chiếm toàn bộ chiều cao màn hình */
+}
+
+.header {
     padding: 10px;
     background-color: #333;
     color: white;
 }
 
-nav a {
+.header a {
     color: white;
     margin-right: 10px;
     text-decoration: none;
 }
 
-nav a.router-link-active {
+.header a.router-link-active {
     font-weight: bold;
+}
+
+.content {
+    flex: 1; /* Chiếm toàn bộ chiều cao còn lại */
+    overflow-y: auto; /* Cho phép cuộn nếu nội dung vượt quá chiều cao */
 }
 </style>

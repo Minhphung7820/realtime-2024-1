@@ -3,7 +3,7 @@
     <div class="message-header bg-gray-100 p-2 sm:p-4 border-b">
       <h3 class="text-base sm:text-lg font-bold">Chat</h3>
     </div>
-    <div class="message-content flex-1 overflow-y-auto p-2 max-h-96">
+    <div class="message-content flex-1 overflow-y-auto p-2">
       <div v-for="(msg, index) in messages" :key="index" class="mb-2">
         <!-- Sử dụng class dựa trên sender -->
         <div :class="msg.sender === 'me' ? 'my-message-container' : 'friend-message-container'">
@@ -70,6 +70,16 @@ export default {
 .message-box {
   display: flex;
   flex-direction: column;
+  height: 100vh; /* Chiếm toàn bộ chiều cao màn hình */
+}
+
+.message-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.message-input {
+  margin-top: auto;
 }
 
 /* Container của tin nhắn của người dùng để căn phải */
@@ -89,10 +99,10 @@ export default {
   padding: 6px 8px;
   border-radius: 8px;
   display: inline-block;
-  max-width: 85%; /* Tăng chiều rộng tối đa cho màn hình nhỏ */
+  max-width: 85%;
   text-align: right;
   word-wrap: break-word;
-  font-size: 0.875rem; /* text-sm */
+  font-size: 0.875rem;
 }
 
 .friend-message {
@@ -100,16 +110,16 @@ export default {
   padding: 6px 8px;
   border-radius: 8px;
   display: inline-block;
-  max-width: 85%; /* Tăng chiều rộng tối đa cho màn hình nhỏ */
+  max-width: 85%;
   text-align: left;
   word-wrap: break-word;
-  font-size: 0.875rem; /* text-sm */
+  font-size: 0.875rem;
 }
 
 @media (min-width: 640px) {
   .my-message, .friend-message {
-    max-width: 70%; /* Giảm chiều rộng tối đa cho màn hình lớn hơn */
-    font-size: 1rem; /* text-base */
+    max-width: 70%;
+    font-size: 1rem;
   }
 }
 

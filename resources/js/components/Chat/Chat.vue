@@ -2,7 +2,7 @@
   <div class="chat-container container mx-auto max-w-5xl flex h-screen p-2 sm:p-4 bg-gray-50 rounded-lg shadow-lg">
     <!-- Hiển thị Conversation và People trên màn hình nhỏ, ẩn khi đang xem Message -->
     <div v-if="!isChatOpen || isDesktop" class="left-pane w-full sm:w-1/2 md:w-1/3 border-r border-gray-300 pr-4 overflow-y-auto">
-      <Conversation @open-chat="openChat" />
+      <Conversation @open-chat="openChat" /> <!-- Nhận sự kiện open-chat và gọi openChat -->
       <People />
     </div>
 

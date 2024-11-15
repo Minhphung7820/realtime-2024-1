@@ -1,13 +1,25 @@
 <template>
-  <div class="conversation-list bg-gray-100 p-4 border-b">
+  <div class="conversation-list bg-gray-100 p-4">
     <h3 class="font-bold text-lg mb-2">Cuộc trò chuyện</h3>
     <ul>
-      <li
-        v-for="(conversation, index) in conversations"
-        :key="index"
-        class="p-2 border-b cursor-pointer hover:bg-gray-200"
-      >
-        {{ conversation.name }}
+      <li v-for="(conversation, index) in conversations" :key="index" class="conversation-item flex items-center p-3 border-b cursor-pointer hover:bg-gray-200">
+        <!-- Avatar -->
+        <img :src="conversation.avatar" alt="Avatar" class="w-10 h-10 rounded-full mr-3" />
+
+        <!-- Nội dung trò chuyện -->
+        <div class="flex-1">
+          <div class="flex justify-between items-center">
+            <h4 class="font-semibold">{{ conversation.name }}</h4>
+            <!-- Hiển thị số tin nhắn chưa đọc -->
+            <span v-if="conversation.unread > 0" class="unread-count text-xs text-white bg-red-500 rounded-full px-2 py-0.5">
+              {{ conversation.unread > 5 ? '5+' : conversation.unread }}
+            </span>
+          </div>
+          <p class="text-gray-500 text-sm truncate">{{ conversation.lastMessage }}</p>
+        </div>
+
+        <!-- Trạng thái online/offline -->
+        <span :class="conversation.isOnline ? 'bg-green-500' : 'bg-gray-400'" class="status-dot w-3 h-3 rounded-full ml-3"></span>
       </li>
     </ul>
   </div>
@@ -18,9 +30,10 @@ export default {
   data() {
     return {
       conversations: [
-        { name: 'Trò chuyện với A' },
-        { name: 'Trò chuyện với B' },
-        { name: 'Trò chuyện với C' },
+        { name: 'Người A', avatar: 'https://via.placeholder.com/40', lastMessage: 'Hello!', isOnline: true, unread: 3 },
+        { name: 'Người B', avatar: 'https://via.placeholder.com/40', lastMessage: 'Lâu rồi không gặp!', isOnline: false, unread: 5 },
+        { name: 'Người C', avatar: 'https://via.placeholder.com/40', lastMessage: 'Bạn khỏe không?', isOnline: true, unread: 1 },
+        { name: 'Người D', avatar: 'https://via.placeholder.com/40', lastMessage: 'Hẹn gặp lại sau nhé!', isOnline: false, unread: 6 },
       ],
     };
   },
@@ -28,8 +41,22 @@ export default {
 </script>
 
 <style scoped>
-.conversation-list ul {
-  list-style-type: none;
-  padding: 0;
+.conversation-item {
+  display: flex;
+  align-items: center;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.unread-count {
+  background-color: red;
+  color: white;
+  font-weight: bold;
+  border-radius: 9999px;
+  padding: 2px 6px;
 }
 </style>

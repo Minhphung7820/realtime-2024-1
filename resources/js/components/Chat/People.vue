@@ -18,16 +18,28 @@
 
 <script>
 export default {
+  inject: ['$axios','$socket'],
   data() {
     return {
-      people: [
-        { name: 'Nhóm A', avatar: 'https://via.placeholder.com/40', isOnline: true, lastOnline: '' },
-        { name: 'Nhóm B', avatar: 'https://via.placeholder.com/40', isOnline: false, lastOnline: '5 phút trước' },
-        { name: 'Bạn C', avatar: 'https://via.placeholder.com/40', isOnline: true, lastOnline: '' },
-        { name: 'Bạn D', avatar: 'https://via.placeholder.com/40', isOnline: false, lastOnline: '1 giờ trước' },
-      ],
+      people: [],
     };
   },
+  async mounted()
+  {
+      await this.getPeople();
+  },
+  methods:{
+    async getPeople()
+     {
+           try {
+              let limitPeople = 10;
+              const getPeople = await this.$axios.get(`/api/get-people?limit=${limitPeople}`);
+              this.people = getPeople.data.data;
+           } catch (error) {
+              console.log("Failed get data :",error);
+           }
+     }
+  }
 };
 </script>
 

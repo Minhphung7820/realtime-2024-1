@@ -3,11 +3,11 @@
     <!-- Hiển thị Conversation và People trên màn hình nhỏ, ẩn khi đang xem Message -->
     <div v-if="!isChatOpen || isDesktop" class="left-pane w-full sm:w-1/2 md:w-1/3 border-r border-gray-300 pr-4 overflow-y-auto">
       <Conversation @open-chat="openChat" />
-      <People />
+      <People @open-chat="openChat" />
     </div>
 
     <!-- Hiển thị Message component khi đang xem chat hoặc trên màn hình lớn -->
-    <div v-if="isChatOpen || isDesktop" class="right-pane w-full sm:w-1/2 md:w-2/3 pl-4 flex flex-col">
+    <div v-if="isChatOpen" class="right-pane w-full sm:w-1/2 md:w-2/3 pl-4 flex flex-col">
       <button v-if="!isDesktop" @click="closeChat" class="p-2 text-blue-500 font-semibold flex items-center mb-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707a1 1 0 00-1.414-1.414L9 11.586 7.707 10.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
@@ -37,7 +37,9 @@ export default {
     };
   },
   methods: {
-    openChat() {
+    openChat(data,type) {
+      console.log(data,type);
+
       this.isChatOpen = true;
     },
     closeChat() {

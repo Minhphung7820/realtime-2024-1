@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Message;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -80,7 +81,7 @@ class ChatController extends Controller
         // Lấy tin nhắn theo conversation_id
         $messages = DB::table('messages')
             ->where('conversation_id', $conversationId)
-            ->orderBy('created_at', 'asc')
+            ->orderBy('created_at', 'desc')
             ->select([
                 'messages.*',
                 DB::raw('(CASE WHEN sender_id = ' . $userId . ' THEN "me" ELSE "friends" END) as sender')
@@ -110,7 +111,6 @@ class ChatController extends Controller
                 ->select('conversations.id as conversation_id')
                 ->first();
 
-
             $info =  DB::table('users')
                 ->where('id', $id)
                 ->select([
@@ -136,6 +136,27 @@ class ChatController extends Controller
                         'name'
                     ])
                     ->first());
+        }
+    }
+
+    public function saveMessage(Request $request)
+    {
+        try {
+            return DB::transaction(function () use ($request) {
+                return Message::create(
+                    [
+                        'conversation_id' => $request['conversation_id'],
+                        'sender_id' => auth()->guard('api')->id(),
+                        'content' => $request['content'],
+                        'type' => $request['type'],
+                        'created_at' => now()->format('Y-m-d H:i:s')
+                    ]
+                );
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 }

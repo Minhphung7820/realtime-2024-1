@@ -35,7 +35,7 @@
         </div>
       </div>
       <!-- Hiển thị trạng thái đang gõ -->
-      <div v-if="isTyping" class="typing-indicator text-gray-500 italic mt-2">
+      <div v-if="isFriendTyping " class="typing-indicator text-gray-500 italic mt-2">
         Người bên kia đang gõ...
       </div>
     </div>
@@ -44,7 +44,7 @@
     <div class="message-input mt-2 flex items-center">
       <input
         v-model="newMessage"
-        @input="onTyping"
+        @keydown="sendTypingEvent"
         type="text"
         placeholder="Nhập tin nhắn..."
         class="flex-1 p-2 sm:p-3 border rounded text-sm sm:text-base"
@@ -80,7 +80,8 @@ export default {
       messages : [],
       updateLastActiveFriendInterval : null,
       newMessage: '', // Tin nhắn mới
-      isTyping: false, // Trạng thái đang gõ
+      isFriendTyping : false, // Trạng thái đang gõ
+      isFriendTypingTimer : null,
       isLoading : true,
       socket :null
     };
@@ -95,9 +96,23 @@ export default {
      this.socket.emit('join_conversation', this.userInfo.conversation_id);
 
     this.socket.on('receive_message', (e) => {
-      if (e.conversation_id === this.userInfo.conversation_id) {
+      if (parseInt(e.conversation_id) === parseInt(this.userInfo.conversation_id)) {
          const sender = parseInt(e.sender_id) === parseInt(this.$userProfile.id) ? 'me' : 'friend';
-        this.messages.push({sender, content : e.content});
+         this.messages.unshift({sender, content : e.content});
+      }
+    });
+
+    this.socket.on('typing', (e) => {
+      if (parseInt(e.conversation_id) === parseInt(this.userInfo.conversation_id)) {
+         this.isFriendTyping = parseInt(e.typewriter_id) === parseInt(this.userInfo.id);
+
+         if (this.isFriendTypingTimer) {
+               clearTimeout(this.isFriendTypingTimer);
+         }
+
+         this.isFriendTypingTimer = setTimeout(() => {
+                this.isFriendTyping = false;
+         }, 500);
       }
     });
     this.updateLastActiveFriendInterval = setInterval(() => {
@@ -219,21 +234,29 @@ export default {
              console.log("Get Failed With Message :".error);
         }
     },
-    sendMessage() {
+   async sendMessage() {
       if (this.newMessage.trim() !== '') {
-        this.socket.emit(`send_message`,{
-           conversation_id : this.userInfo.conversation_id, sender_id : this.$userProfile.id, content: this.newMessage
-        });
+         try {
+             await this.$axios.post(`/api/save-message`,{
+                   conversation_id : this.userInfo.conversation_id,
+                   content: this.newMessage,
+                   type : 'text'
+             });
+             this.socket.emit(`send_message`,{
+               conversation_id : this.userInfo.conversation_id,
+               sender_id : this.$userProfile.id,
+               content: this.newMessage
+             });
         this.newMessage = '';
-        this.isTyping = false;
+         } catch (error) {
+              console.log("GET DATA FAILED : ",error);
+         }
       }
     },
-    onTyping() {
-      this.isTyping = true;
-      clearTimeout(this.typingTimeout);
-      this.typingTimeout = setTimeout(() => {
-        this.isTyping = false;
-      }, 1000);
+    sendTypingEvent() {
+        this.socket.emit(`typing`,{
+           conversation_id : this.userInfo.conversation_id, typewriter_id : this.$userProfile.id
+        });
     },
     updateLastActiveFriendConversation(){
        if(!this.userInfo.isOnline && this.userInfo.lastOnline){
@@ -254,7 +277,7 @@ export default {
 
 .message-content {
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   justify-content: flex-end; /* Căn nội dung xuống cuối */
   flex: 1;
   overflow-y: auto; /* Cho phép cuộn nếu nội dung vượt quá chiều cao */

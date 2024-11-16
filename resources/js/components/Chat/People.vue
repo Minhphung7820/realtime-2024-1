@@ -105,7 +105,7 @@ export default {
     // Hàm cập nhật last_active cho từng người online
     updateLastActive() {
       this.people.forEach(person => {
-        if (person.isOnline && person.last_active) {
+        if (!person.isOnline && person.last_active) {
           person.last_active_string = this.formatTimeDifference(person.last_active);
         }
       });

@@ -18,40 +18,97 @@
 
 <script>
 export default {
-  inject: ['$axios','$socket'],
+  inject: ['$axios', '$socket'],
   data() {
     return {
       people: [],
-      usersMapping : []
+      updateLastActiveInterval : null
     };
   },
-  async mounted()
-  {
-      await this.getPeople();
-      this.$socket.on('user_list',this.handleUserWithStatus);
-      this.$socket.on('user_disconnect_list',this.handleUserWithStatus);
-  },
-  methods:{
-    async getPeople()
-     {
-           try {
-              let limitPeople = 10;
-              const getPeople = await this.$axios.get(`/api/get-people?limit=${limitPeople}`);
-              this.people = getPeople.data.data;
-           } catch (error) {
-              console.log("Failed get data :",error);
-           }
-     },
-     handleUserWithStatus(user)
-     {
-          const matchingPerson = this.people.find(person => person.id === parseInt(user.userID));
-          if (matchingPerson) {
-            matchingPerson.isOnline = user.online;
-            matchingPerson.last_active = user.last_active;
-          }
-          console.log(this.people);
+  async mounted() {
+    await this.getPeople();
+    await this.fetchOnlineUsers();
+    // Lắng nghe sự kiện từ WebSocket
+    this.$socket.on('user_list',this.handleUserWithStatus);
+    this.$socket.on('user_disconnect_list', this.handleUserWithStatus);
+    // Chạy hàm cập nhật last_active mỗi giây
 
-     }
+    //
+    this.updateLastActiveInterval = setInterval(this.updateLastActive, 1000);
+  },
+  beforeUnmount() {
+    // Dừng interval khi component bị hủy
+    clearInterval(this.updateLastActiveInterval);
+  },
+  methods: {
+      async fetchOnlineUsers() {
+        try {
+          const response = await this.$axios.get('http://localhost:6060/api/online-users');
+          const onlineUsers = response.data.data;
+
+          // Cập nhật trạng thái online vào mảng people
+          onlineUsers.forEach(user => {
+            const matchingPerson = this.people.find(person => person.id === parseInt(user.userID));
+            if (matchingPerson) {
+              matchingPerson.isOnline = user.isOnline;
+            }
+          });
+        } catch (error) {
+          console.error('Failed to fetch online users:', error);
+        }
+    },
+    async getPeople() {
+      try {
+        let limitPeople = 10;
+        const getPeople = await this.$axios.get(`/api/get-people?limit=${limitPeople}`);
+        this.people = getPeople.data.data.map(person => ({
+          ...person,
+          isOnline: false // Mặc định offline
+        }));
+      } catch (error) {
+        console.log('Failed get data:', error);
+      }
+    },
+    handleUserWithStatus(user) {
+      const matchingPerson = this.people.find(person => person.id === parseInt(user.userID));
+      if (matchingPerson) {
+        matchingPerson.isOnline = user.online;
+        matchingPerson.last_active = user.last_active;
+      }
+    },
+    // Hàm tính thời gian trước đó
+    formatTimeDifference(lastActive) {
+      const now = new Date();
+      const lastActiveDate = new Date(lastActive);
+      const diffSeconds = Math.floor((now - lastActiveDate) / 1000); // Chênh lệch giây
+
+      if (diffSeconds < 60) {
+        return 'Vừa truy cập';
+      } else if (diffSeconds < 3600) {
+        const minutes = Math.floor(diffSeconds / 60);
+        return `${minutes} phút trước`;
+      } else if (diffSeconds < 86400) {
+        const hours = Math.floor(diffSeconds / 3600);
+        return `${hours} giờ trước`;
+      } else if (diffSeconds < 604800) {
+        const days = Math.floor(diffSeconds / 86400);
+        return `${days} ngày trước`;
+      } else if (diffSeconds < 2592000) {
+        const weeks = Math.floor(diffSeconds / 604800);
+        return `${weeks} tuần trước`;
+      } else {
+        const months = Math.floor(diffSeconds / 2592000);
+        return `${months} tháng trước`;
+      }
+    },
+    // Hàm cập nhật last_active cho từng người online
+    updateLastActive() {
+      this.people.forEach(person => {
+        if (person.isOnline && person.last_active) {
+          person.last_active = this.formatTimeDifference(person.last_active);
+        }
+      });
+    }
   }
 };
 </script>

@@ -107,11 +107,22 @@ export default {
       immediate: true, // Gọi ngay lần đầu khi component được mount
       async handler(newData) {
         if (newData) {
-         this.isLoading = true;
-         await this.getConversation();
-         await this.getStatusUserOnline();
-         await this.getMessage(); // Gọi lại hàm lấy tin nhắn
-         this.isLoading = false;
+          // Reset dữ liệu
+          this.isLoading = true;
+          this.messages = [];
+          this.userInfo = {
+            id: null,
+            name: '',
+            avatar: 'https://st3.depositphotos.com/1767687/16607/v/450/depositphotos_166074422-stock-illustration-default-avatar-profile-icon-grey.jpg',
+            isOnline: false,
+            lastOnline: '',
+            lastOnlineString: '',
+          };
+          // Lấy dữ liệu mới
+          await this.getConversation();
+          await this.getStatusUserOnline();
+          await this.getMessage();
+          this.isLoading = false;
         }
       },
     },

@@ -46,8 +46,12 @@ export default {
     clearInterval(this.updateLastActiveInterval);
   },
   methods: {
-    openChat(userId,type) {
-        this.$emit('open-chat',userId,type); // Phát sự kiện open-chat lên cha
+    openChat(userId, type) {
+      if (this.$parent.dataMessage.id === userId && this.$parent.dataMessage.type === type) {
+        // Nếu người dùng đang mở chính họ, không làm gì cả
+        return;
+      }
+      this.$emit('open-chat', userId, type); // Phát sự kiện open-chat lên cha
     },
     async fetchOnlineUsers() {
         try {

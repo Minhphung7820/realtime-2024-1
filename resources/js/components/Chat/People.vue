@@ -22,11 +22,14 @@ export default {
   data() {
     return {
       people: [],
+      usersMapping : []
     };
   },
   async mounted()
   {
       await this.getPeople();
+      this.$socket.on('user_list',this.handleUserWithStatus);
+      this.$socket.on('user_disconnect_list',this.handleUserWithStatus);
   },
   methods:{
     async getPeople()
@@ -38,6 +41,16 @@ export default {
            } catch (error) {
               console.log("Failed get data :",error);
            }
+     },
+     handleUserWithStatus(user)
+     {
+          const matchingPerson = this.people.find(person => person.id === parseInt(user.userID));
+          if (matchingPerson) {
+            matchingPerson.isOnline = user.online;
+            matchingPerson.lastOnline = user.last_active;
+          }
+          console.log(this.people);
+
      }
   }
 };

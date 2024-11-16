@@ -99,7 +99,7 @@ class AuthController extends Controller
     {
         try {
             return DB::transaction(function () use ($request) {
-                return User::where('id', $request['userID'])->update(['last_active' => now()]);
+                return User::where('id', $request['userID'])->update(['last_active' => $request['last_active']]);
             });
         } catch (\Exception $e) {
             return response()->json([

@@ -40,8 +40,7 @@ export default {
         });
 
         localStorage.setItem('token', response.data.token);
-        initializeSocket(response.data.user.id);
-        this.$router.push('/');
+        window.location = '/';
       } catch (error) {
         this.errorMessage = error.response.data.message;
       }

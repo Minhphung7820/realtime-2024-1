@@ -42,7 +42,7 @@ export default {
         await this.$axios.post('/api/logout');
         this.$socket.disconnect();
         localStorage.removeItem('token');
-        this.$router.push('/login');
+        window.location = '/login';
       } catch (error) {
         console.error("Logout failed:", error);
       }

@@ -83,7 +83,8 @@ export default {
       const matchingPerson = this.people.find(person => person.id === parseInt(user.userID));
       if (matchingPerson) {
         matchingPerson.isOnline = user.online;
-        matchingPerson.last_active = matchingPerson.last_active ? user.last_active : null;
+        matchingPerson.last_active = user.last_active;
+        matchingPerson.last_active_string = this.formatTimeDifference(user.last_active)
       }
     },
     // Hàm tính thời gian trước đó

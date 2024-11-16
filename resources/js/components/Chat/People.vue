@@ -7,7 +7,7 @@
         <div class="flex-1 max-w-xs">
           <div class="flex justify-between items-center w-full">
             <h4 class="font-semibold text-sm sm:text-base truncate">{{ person.name }}</h4>
-            <span v-if="!person.isOnline" class="text-xs text-gray-400 last-online">{{ person.lastOnline }}</span>
+            <span v-if="!person.isOnline" class="text-xs text-gray-400 last-online">{{ person.last_active }}</span>
           </div>
         </div>
         <span :class="person.isOnline ? 'bg-green-500' : 'bg-gray-400'" class="status-dot"></span>
@@ -47,7 +47,7 @@ export default {
           const matchingPerson = this.people.find(person => person.id === parseInt(user.userID));
           if (matchingPerson) {
             matchingPerson.isOnline = user.online;
-            matchingPerson.lastOnline = user.last_active;
+            matchingPerson.last_active = user.last_active;
           }
           console.log(this.people);
 

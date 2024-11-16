@@ -17,7 +17,7 @@
             class="w-3 h-3 rounded-full mr-1"
           ></span>
           <span class="text-sm sm:text-base text-gray-600">
-            {{ userInfo.isOnline ? 'Đang hoạt động' : `${userInfo.lastOnline}` }}
+            {{ userInfo.isOnline ? 'Đang hoạt động' : `${userInfo.lastOnlineString}` }}
           </span>
         </div>
       </div>
@@ -73,11 +73,10 @@ export default {
         avatar: 'https://st3.depositphotos.com/1767687/16607/v/450/depositphotos_166074422-stock-illustration-default-avatar-profile-icon-grey.jpg', // Đường dẫn đến avatar
         isOnline: false, // Trạng thái online (true: online, false: offline)
         lastOnline: '', // Thời gian online gần nhất nếu offline
+        lastOnlineString: '',
       },
-      messages: [
-        { sender: 'me', text: 'Xin chào!' },
-        { sender: 'friend', text: 'Chào bạn àkljagl!' },
-      ],
+      messages : [],
+      updateLastActiveFriendInterval : null,
       newMessage: '', // Tin nhắn mới
       isTyping: false, // Trạng thái đang gõ
     };
@@ -89,6 +88,14 @@ export default {
      await this.getMessage();
      socket.on('user_list',this.handleUserWithStatusFromSocket);
      socket.on('user_disconnect_list', this.handleUserWithStatusFromSocket);
+
+    this.updateLastActiveFriendInterval = setInterval(() => {
+        this.updateLastActiveFriendConversation();
+    }, 1000);
+  },
+  beforeUnmount() {
+    // Dừng interval khi component bị hủy
+    clearInterval(this.updateLastActiveFriendInterval);
   },
   watch: {
     dataMessage: {
@@ -112,7 +119,8 @@ export default {
         this.userInfo.id = response.data.id;
         this.userInfo.avatar = response.data.avatar;
         this.userInfo.name = response.data.name;
-        this.userInfo.lastOnline = this.formatTimeDifference(response.data.last_active);
+        this.userInfo.lastOnline = response.data.last_active;
+        this.userInfo.lastOnlineString = this.formatTimeDifference(response.data.last_active);
       } catch (error) {
         console.log("GET DATA FAILED : ",error);
       }
@@ -129,7 +137,8 @@ export default {
     handleUserWithStatusFromSocket(user){
         if(parseInt(user.userID) === parseInt(this.userInfo.id)){
           this.userInfo.isOnline = user.online;
-          this.userInfo.lastOnline = this.formatTimeDifference(user.last_active);
+          this.userInfo.lastOnline = user.last_active;
+          this.userInfo.lastOnlineString = this.formatTimeDifference(user.last_active);
         }
     },
     formatTimeDifference(lastActive) {
@@ -187,6 +196,11 @@ export default {
         this.isTyping = false;
       }, 1000);
     },
+    updateLastActiveFriendConversation(){
+       if(!this.userInfo.isOnline && this.userInfo.lastOnline){
+          this.userInfo.lastOnlineString = this.formatTimeDifference(this.userInfo.lastOnline);
+       }
+    }
   },
 };
 </script>

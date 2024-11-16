@@ -61,11 +61,20 @@ export default {
       try {
         let limitPeople = 10;
         const getPeople = await this.$axios.get(`/api/get-people?limit=${limitPeople}`);
-        this.people = getPeople.data.data.map(person => ({
+
+        const firstTenPeople = getPeople.data.data.slice(0, 10).map(person => ({
           ...person,
           isOnline: false, // Mặc định offline
-          last_active_string: this.formatTimeDifference(person.last_active)
+          last_active_string:person.last_active ? this.formatTimeDifference(person.last_active) : null
         }));
+
+        const remainingPeople = getPeople.data.data.slice(10).map(person => ({
+          ...person,
+          isOnline: false,
+          last_active_string: null // Không áp dụng format cho các phần tử sau
+        }));
+
+      this.people = [...firstTenPeople, ...remainingPeople];
       } catch (error) {
         console.log('Failed get data:', error);
       }
@@ -74,7 +83,7 @@ export default {
       const matchingPerson = this.people.find(person => person.id === parseInt(user.userID));
       if (matchingPerson) {
         matchingPerson.isOnline = user.online;
-        matchingPerson.last_active = user.last_active;
+        matchingPerson.last_active = person.last_active ? user.last_active : null;
       }
     },
     // Hàm tính thời gian trước đó
@@ -104,7 +113,7 @@ export default {
     },
     // Hàm cập nhật last_active cho từng người online
     updateLastActive() {
-      this.people.forEach(person => {
+      this.people.slice(0, 10).forEach(person => {
         if (!person.isOnline && person.last_active) {
           person.last_active_string = this.formatTimeDifference(person.last_active);
         }

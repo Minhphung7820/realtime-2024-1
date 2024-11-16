@@ -124,10 +124,13 @@ export default {
   height: 100vh;
 }
 
-/* Nội dung tin nhắn */
 .message-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end; /* Căn nội dung xuống cuối */
   flex: 1;
-  overflow-y: auto;
+  overflow-y: auto; /* Cho phép cuộn nếu nội dung vượt quá chiều cao */
+  padding: 1rem;
 }
 
 /* Nhập tin nhắn */

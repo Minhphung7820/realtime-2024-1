@@ -106,7 +106,7 @@ export default {
     dataMessage: {
       immediate: true, // Gọi ngay lần đầu khi component được mount
       async handler(newData) {
-        if (newData && newData.id) {
+        if (newData) {
          this.isLoading = true;
          await this.getConversation();
          await this.getStatusUserOnline();

@@ -107,6 +107,9 @@ export default {
   },
   beforeUnmount() {
     // Dừng interval khi component bị hủy
+    if(this.socket && this.userInfo.conversation_id){
+      this.socket.emit('leave_conversation', this.userInfo.conversation_id);
+    }
     clearInterval(this.updateLastActiveFriendInterval);
   },
   watch: {
@@ -115,7 +118,10 @@ export default {
       async handler(newData) {
         if (newData) {
           // Reset dữ liệu
-          this.socket = null;
+          if(this.socket && this.userInfo.conversation_id){
+            this.socket.emit('leave_conversation', this.userInfo.conversation_id);
+            this.socket = null;
+          }
           this.isLoading = true;
           this.messages = [];
           this.userInfo = {
@@ -218,7 +224,6 @@ export default {
         this.socket.emit(`send_message`,{
            conversation_id : this.userInfo.conversation_id, sender_id : this.$userProfile.id, content: this.newMessage
         });
-        this.messages.push({sender, content : e.content});
         this.newMessage = '';
         this.isTyping = false;
       }

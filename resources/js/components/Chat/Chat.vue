@@ -14,7 +14,7 @@
         </svg>
         Quay lại
       </button>
-      <Message />
+      <Message :dataMessage="dataMessage" />
     </div>
   </div>
 </template>
@@ -34,13 +34,15 @@ export default {
     return {
       isChatOpen: false,
       isDesktop: window.innerWidth >= 640,
+      dataMessage : {}
     };
   },
   methods: {
     openChat(data,type) {
-      console.log(data,type);
-
       this.isChatOpen = true;
+      this.dataMessage = {
+        id : data,type
+      };
     },
     closeChat() {
       this.isChatOpen = false;

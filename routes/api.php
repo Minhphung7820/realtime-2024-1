@@ -16,3 +16,4 @@ Route::post('/set-last-online', [AuthController::class, 'setLastOnline']);
 Route::get('get-profile', [AuthController::class, 'getProfile'])->middleware('auth:api');
 Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api');
 Route::get('get-people', [ChatController::class, 'getPeople'])->middleware('auth:api');
+Route::get('get-message', [ChatController::class, 'getMessage'])->middleware('auth:api');

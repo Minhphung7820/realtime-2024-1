@@ -29,7 +29,7 @@
         <!-- Sử dụng class dựa trên sender -->
         <div :class="msg.sender === 'me' ? 'my-message-container' : 'friend-message-container'">
           <div :class="msg.sender === 'me' ? 'my-message' : 'friend-message'">
-            <p>{{ msg.text }}</p>
+            <p>{{ msg.content }}</p>
           </div>
         </div>
       </div>
@@ -58,12 +58,20 @@
 
 <script>
 export default {
+  inject: ['$axios'],
+  props:{
+      dataMessage:{
+        type:Object,
+        required: true
+      }
+  },
   data() {
+
     return {
       userInfo: {
         name: 'Nguyễn Văn A', // Tên người dùng
         avatar: 'https://i.vgt.vn/2023/9/12/hotgirl-tran-ha-linh-tuyen-bo-so-dan-ong-hau-bi-ban-trai-cu-tung-clip-co-khi-toi-dong-tinh-0b2-6980241.png', // Đường dẫn đến avatar
-        isOnline: false, // Trạng thái online (true: online, false: offline)
+        isOnline: true, // Trạng thái online (true: online, false: offline)
         lastOnline: '3 phút trước', // Thời gian online gần nhất nếu offline
       },
       messages: [
@@ -74,7 +82,22 @@ export default {
       isTyping: false, // Trạng thái đang gõ
     };
   },
+  async mounted(){
+     await this.getMessage();
+  },
   methods: {
+    async getMessage(){
+        const id = this.dataMessage.id;
+        const type = this.dataMessage.type;
+        try {
+             const response = await this.$axios.get(`/api/get-message?id=${id}&type=${type}`);
+             this.messages = response.data.data;
+             console.log(this.messages);
+
+        } catch (error) {
+             console.log("Get Failed With Message :".error);
+        }
+    },
     sendMessage() {
       if (this.newMessage.trim() !== '') {
         this.messages.push({ sender: 'me', text: this.newMessage });

@@ -6,7 +6,7 @@ import { CkeditorPlugin } from '@ckeditor/ckeditor5-vue';
 import { initializeSocket } from './plugins/socket';
 
 const baseURL = window.baseURL;
-
+let userProfile;
 // Cấu hình axios với baseURL lấy từ window.baseURL
 const axiosInstance = axios.create({
   baseURL: baseURL,
@@ -33,7 +33,7 @@ if (token) {
   try {
     const getProfile = await axiosInstance.get('/api/get-profile');
     const userID = getProfile.data.id;
-
+    userProfile = getProfile.data;
     // Khởi tạo socket khi user đã đăng nhập
     socket = initializeSocket(userID);
     app.provide('$socket', socket);
@@ -63,6 +63,7 @@ axiosInstance.interceptors.response.use(
 );
 
 app.provide('$axios', axiosInstance);
+app.provide('$userProfile', userProfile);
 app.use(router);
 app.use(CkeditorPlugin);
 app.mount('#app');

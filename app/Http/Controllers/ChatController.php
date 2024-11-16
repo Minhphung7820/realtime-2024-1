@@ -89,4 +89,38 @@ class ChatController extends Controller
 
         return response()->json($messages);
     }
+
+    public function detailConversation(Request $request)
+    {
+        $type = $request->input('type');
+        $id = $request->input('id');
+
+        if (!$type || !$id) {
+            return response()->json(['message' => 'Thiếu tham số type hoặc id'], 400);
+        }
+
+        if ($type === 'private') {
+            return response()
+                ->json(DB::table('users')
+                    ->where('id', $id)
+                    ->select([
+                        'id',
+                        'name',
+                        'avatar',
+                        'last_active'
+                    ])
+                    ->first());
+        }
+
+        if ($type === 'group') {
+            return response()
+                ->json(DB::table('groups')
+                    ->where('id', $id)
+                    ->select([
+                        'id',
+                        'name'
+                    ])
+                    ->first());
+        }
+    }
 }

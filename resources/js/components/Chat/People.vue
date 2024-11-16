@@ -41,10 +41,10 @@ export default {
     clearInterval(this.updateLastActiveInterval);
   },
   methods: {
-      openChat(userId,type) {
+    openChat(userId,type) {
         this.$emit('open-chat',userId,type); // Phát sự kiện open-chat lên cha
-      },
-      async fetchOnlineUsers() {
+    },
+    async fetchOnlineUsers() {
         try {
           const response = await this.$axios.get('http://localhost:6060/api/online-users');
           const onlineUsers = response.data.data;

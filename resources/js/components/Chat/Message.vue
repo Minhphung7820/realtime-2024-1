@@ -23,17 +23,14 @@
       </div>
     </div>
 
-    <!-- Content: Tin nhắn -->
-    <div class="message-content flex-1 overflow-y-auto p-2">
-      <div v-for="(msg, index) in messages" :key="index" class="mb-2">
-        <!-- Sử dụng class dựa trên sender -->
-        <div :class="msg.sender === 'me' ? 'my-message-container' : 'friend-message-container'">
-          <div :class="msg.sender === 'me' ? 'my-message' : 'friend-message'">
-            <p>{{ msg.content }}</p>
+      <div ref="messageContent" class="message-content flex-1 overflow-y-auto p-2">
+        <div v-for="(msg, index) in messages" :key="index" class="mb-2">
+          <div :class="msg.sender === 'me' ? 'my-message-container' : 'friend-message-container'">
+            <div :class="msg.sender === 'me' ? 'my-message' : 'friend-message'">
+              <p>{{ msg.content }}</p>
           </div>
         </div>
       </div>
-
       <!-- Hiển thị trạng thái đang gõ -->
       <div v-if="isTyping" class="typing-indicator text-gray-500 italic mt-2">
         Người bên kia đang gõ...
@@ -57,8 +54,10 @@
 </template>
 
 <script>
+import { initializeSocket } from '../../plugins/socket.js';
+
 export default {
-  inject: ['$axios'],
+  inject: ['$axios','$userProfile'],
   props:{
       dataMessage:{
         type:Object,
@@ -69,10 +68,11 @@ export default {
 
     return {
       userInfo: {
-        name: 'Nguyễn Văn A', // Tên người dùng
-        avatar: 'https://i.vgt.vn/2023/9/12/hotgirl-tran-ha-linh-tuyen-bo-so-dan-ong-hau-bi-ban-trai-cu-tung-clip-co-khi-toi-dong-tinh-0b2-6980241.png', // Đường dẫn đến avatar
-        isOnline: true, // Trạng thái online (true: online, false: offline)
-        lastOnline: '3 phút trước', // Thời gian online gần nhất nếu offline
+        id : null,
+        name: '', // Tên người dùng
+        avatar: 'https://st3.depositphotos.com/1767687/16607/v/450/depositphotos_166074422-stock-illustration-default-avatar-profile-icon-grey.jpg', // Đường dẫn đến avatar
+        isOnline: false, // Trạng thái online (true: online, false: offline)
+        lastOnline: '', // Thời gian online gần nhất nếu offline
       },
       messages: [
         { sender: 'me', text: 'Xin chào!' },
@@ -83,17 +83,70 @@ export default {
     };
   },
   async mounted(){
+     await this.getConversation();
+     await this.getStatusUserOnline();
      await this.getMessage();
   },
+  watch: {
+    dataMessage: {
+      immediate: true, // Gọi ngay lần đầu khi component được mount
+      async handler(newData) {
+        if (newData && newData.id) {
+         await this.getConversation();
+         await this.getStatusUserOnline();
+         await this.getMessage(); // Gọi lại hàm lấy tin nhắn
+        }
+      },
+    },
+    // isOnline:{
+
+    // }
+  },
   methods: {
+    async getConversation()
+    {
+      const id = this.dataMessage.id;
+      const type = this.dataMessage.type;
+      try {
+        const response = await this.$axios.get(`/api/get-detail-conversation?id=${id}&type=${type}`);
+        this.userInfo.id = response.data.id;
+        this.userInfo.avatar = response.data.avatar;
+        this.userInfo.name = response.data.name;
+        initializeSocket(this.$userProfile.id).on('user_list',this.handleUserWithStatus);
+        initializeSocket(this.$userProfile.id).on('user_disconnect_list', this.handleUserWithStatus);
+      } catch (error) {
+        console.log("GET DATA FAILED : ",error);
+      }
+     },
+     async getStatusUserOnline() {
+        try {
+          const response = await this.$axios.get(`http://localhost:6060/api/online-users`);
+          const onlineUsers = response.data.data;
+          this.userInfo.isOnline = onlineUsers.some(item => parseInt(item.userID) === parseInt(this.userInfo.id));
+          console.log(this.userInfo.isOnline,response.data.data);
+
+        } catch (error) {
+          console.error('Failed to fetch online users:', error);
+        }
+    },
+    handleUserWithStatus(user){
+        if(user.userID === this.userInfo.id){
+          this.userInfo.isOnline = user.online;
+        }
+    },
+    scrollToBottom() {
+    const messageContent = this.$refs.messageContent;
+        if (messageContent) {
+          messageContent.scrollTop = messageContent.scrollHeight;
+        }
+    },
     async getMessage(){
         const id = this.dataMessage.id;
         const type = this.dataMessage.type;
         try {
              const response = await this.$axios.get(`/api/get-message?id=${id}&type=${type}`);
              this.messages = response.data.data;
-             console.log(this.messages);
-
+             this.scrollToBottom(); // Cuộn xuống cuối cùng
         } catch (error) {
              console.log("Get Failed With Message :".error);
         }

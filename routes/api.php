@@ -17,3 +17,4 @@ Route::get('get-profile', [AuthController::class, 'getProfile'])->middleware('au
 Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api');
 Route::get('get-people', [ChatController::class, 'getPeople'])->middleware('auth:api');
 Route::get('get-message', [ChatController::class, 'getMessage'])->middleware('auth:api');
+Route::get('get-detail-conversation', [ChatController::class, 'detailConversation'])->middleware('auth:api');

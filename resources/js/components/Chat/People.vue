@@ -32,7 +32,10 @@ export default {
     this.$socket.on('user_list',this.handleUserWithStatus);
     this.$socket.on('user_disconnect_list', this.handleUserWithStatus);
     // Chạy hàm cập nhật last_active mỗi giây
-    this.updateLastActiveInterval = setInterval(this.updateLastActive, 1000);
+    this.updateLastActiveInterval = setInterval(() => {
+        console.log('setInterval running');
+        this.updateLastActive();
+    }, 1000);
   },
   beforeUnmount() {
     // Dừng interval khi component bị hủy

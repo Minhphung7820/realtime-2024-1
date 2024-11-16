@@ -87,8 +87,8 @@ export default {
      await this.getConversation();
      await this.getStatusUserOnline();
      await this.getMessage();
-     socket.on('user_list',this.handleUserWithStatus);
-     socket.on('user_disconnect_list', this.handleUserWithStatus);
+     socket.on('user_list',this.handleUserWithStatusFromSocket);
+     socket.on('user_disconnect_list', this.handleUserWithStatusFromSocket);
   },
   watch: {
     dataMessage: {
@@ -101,9 +101,6 @@ export default {
         }
       },
     },
-    // isOnline:{
-
-    // }
   },
   methods: {
     async getConversation()
@@ -129,7 +126,7 @@ export default {
           console.error('Failed to fetch online users:', error);
         }
     },
-    handleUserWithStatus(user){
+    handleUserWithStatusFromSocket(user){
         if(parseInt(user.userID) === parseInt(this.userInfo.id)){
           this.userInfo.isOnline = user.online;
           this.userInfo.lastOnline = this.formatTimeDifference(user.last_active);

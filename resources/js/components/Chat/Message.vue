@@ -1,5 +1,8 @@
 <template>
-  <div class="message-box flex flex-col h-full p-2 sm:p-4">
+  <div v-if="isLoading" class="loading-container">
+     <div class="spinner"></div>
+  </div>
+  <div v-else class="message-box flex flex-col h-full p-2 sm:p-4">
     <!-- Header: Avatar, Tên, và Trạng thái -->
     <div class="message-header bg-gray-100 p-2 sm:p-4 border-b flex items-center">
       <!-- Avatar -->
@@ -79,6 +82,7 @@ export default {
       updateLastActiveFriendInterval : null,
       newMessage: '', // Tin nhắn mới
       isTyping: false, // Trạng thái đang gõ
+      isLoading : true
     };
   },
   async mounted(){
@@ -92,6 +96,7 @@ export default {
     this.updateLastActiveFriendInterval = setInterval(() => {
         this.updateLastActiveFriendConversation();
     }, 1000);
+    this.isLoading = false;
   },
   beforeUnmount() {
     // Dừng interval khi component bị hủy
@@ -102,9 +107,11 @@ export default {
       immediate: true, // Gọi ngay lần đầu khi component được mount
       async handler(newData) {
         if (newData && newData.id) {
+         this.isLoading = true;
          await this.getConversation();
          await this.getStatusUserOnline();
          await this.getMessage(); // Gọi lại hàm lấy tin nhắn
+         this.isLoading = false;
         }
       },
     },

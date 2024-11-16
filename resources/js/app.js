@@ -2,6 +2,7 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
 import './bootstrap';
+import '../css/global.css';
 import { CkeditorPlugin } from '@ckeditor/ckeditor5-vue';
 import { initializeSocket } from './plugins/socket';
 

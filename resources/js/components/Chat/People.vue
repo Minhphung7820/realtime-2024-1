@@ -1,7 +1,10 @@
 <template>
   <div class="people-list bg-gray-50 p-2 sm:p-4">
     <h3 class="font-bold text-lg mb-2">Danh sách nhóm và bạn bè</h3>
-    <ul>
+    <div v-if="isLoading" class="loading-container">
+      <div class="spinner"></div>
+    </div>
+    <ul v-else>
       <li v-for="(person, index) in people" :key="index" class="people-item flex items-center p-2 sm:p-3 border-b cursor-pointer hover:bg-gray-200" @click="openChat(person.id,'private')" >
         <img :src="person.avatar" alt="Avatar" class="avatar w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 sm:mr-3" />
         <div class="flex-1 max-w-xs">
@@ -22,7 +25,8 @@ export default {
   data() {
     return {
       people: [],
-      updateLastActiveInterval : null
+      updateLastActiveInterval : null,
+      isLoading: true
     };
   },
   async mounted() {
@@ -35,6 +39,7 @@ export default {
     this.updateLastActiveInterval = setInterval(() => {
         this.updateLastActive();
     }, 1000);
+    this.isLoading = false;
   },
   beforeUnmount() {
     // Dừng interval khi component bị hủy

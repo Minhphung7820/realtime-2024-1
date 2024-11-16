@@ -92,6 +92,7 @@ class ChatController extends Controller
 
     public function detailConversation(Request $request)
     {
+        $userId = auth()->guard('api')->id();
         $type = $request->input('type');
         $id = $request->input('id');
 
@@ -100,16 +101,30 @@ class ChatController extends Controller
         }
 
         if ($type === 'private') {
+            $conversation = DB::table('conversations')
+                ->join('conversation_participants as cp1', 'conversations.id', '=', 'cp1.conversation_id')
+                ->join('conversation_participants as cp2', 'conversations.id', '=', 'cp2.conversation_id')
+                ->where('conversations.type', 'private')
+                ->where('cp1.user_id', $userId)
+                ->where('cp2.user_id', $id)
+                ->select('conversations.id as conversation_id')
+                ->first();
+
+
+            $info =  DB::table('users')
+                ->where('id', $id)
+                ->select([
+                    'id',
+                    'name',
+                    'avatar',
+                    'last_active'
+                ])
+                ->first();
+            if ($info) {
+                $info->conversation_id = $conversation->conversation_id;
+            }
             return response()
-                ->json(DB::table('users')
-                    ->where('id', $id)
-                    ->select([
-                        'id',
-                        'name',
-                        'avatar',
-                        'last_active'
-                    ])
-                    ->first());
+                ->json($info);
         }
 
         if ($type === 'group') {

@@ -20,8 +20,6 @@
 </template>
 
 <script>
-import { initializeSocket } from '../../plugins/socket';
-
 export default {
   inject: ['$axios'],
   data() {

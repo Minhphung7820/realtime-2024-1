@@ -65,6 +65,7 @@ axiosInstance.interceptors.response.use(
 
 app.provide('$axios', axiosInstance);
 app.provide('$userProfile', userProfile);
+app.provide('$socket', socket);
 app.use(router);
 app.use(CkeditorPlugin);
 app.mount('#app');

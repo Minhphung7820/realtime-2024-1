@@ -57,10 +57,8 @@
 </template>
 
 <script>
-import { initializeSocket } from '../../plugins/socket.js';
-
 export default {
-  inject: ['$axios','$userProfile'],
+  inject: ['$axios','$userProfile','$socket'],
   props:{
       dataMessage:{
         type:Object,
@@ -77,22 +75,31 @@ export default {
         isOnline: false, // Trạng thái online (true: online, false: offline)
         lastOnline: '', // Thời gian online gần nhất nếu offline
         lastOnlineString: '',
+        conversation_id : null
       },
       messages : [],
       updateLastActiveFriendInterval : null,
       newMessage: '', // Tin nhắn mới
       isTyping: false, // Trạng thái đang gõ
-      isLoading : true
+      isLoading : true,
+      socket :null
     };
   },
   async mounted(){
-     const socket = initializeSocket(this.$userProfile.id);
+     this.socket = this.$socket;
      await this.getConversation();
      await this.getStatusUserOnline();
      await this.getMessage();
-     socket.on('user_list',this.handleUserWithStatusFromSocket);
-     socket.on('user_disconnect_list', this.handleUserWithStatusFromSocket);
+     this.socket.on('user_list',this.handleUserWithStatusFromSocket);
+     this.socket.on('user_disconnect_list', this.handleUserWithStatusFromSocket);
+     this.socket.emit('join_conversation', this.userInfo.conversation_id);
 
+    this.socket.on('receive_message', (e) => {
+      if (e.conversation_id === this.userInfo.conversation_id) {
+         const sender = parseInt(e.sender_id) === parseInt(this.$userProfile.id) ? 'me' : 'friend';
+        this.messages.push({sender, content : e.content});
+      }
+    });
     this.updateLastActiveFriendInterval = setInterval(() => {
         this.updateLastActiveFriendConversation();
     }, 1000);
@@ -108,6 +115,7 @@ export default {
       async handler(newData) {
         if (newData) {
           // Reset dữ liệu
+          this.socket = null;
           this.isLoading = true;
           this.messages = [];
           this.userInfo = {
@@ -117,11 +125,13 @@ export default {
             isOnline: false,
             lastOnline: '',
             lastOnlineString: '',
+            conversation_id : null
           };
-          // Lấy dữ liệu mới
+          this.socket = this.$socket;
           await this.getConversation();
           await this.getStatusUserOnline();
           await this.getMessage();
+          this.socket.emit('join_conversation', this.userInfo.conversation_id);
           this.isLoading = false;
         }
       },
@@ -138,6 +148,9 @@ export default {
         this.userInfo.avatar = response.data.avatar;
         this.userInfo.name = response.data.name;
         this.userInfo.lastOnline = response.data.last_active;
+        this.userInfo.conversation_id = response.data.conversation_id;
+        console.log(response.data.conversation_id);
+
         this.userInfo.lastOnlineString = this.formatTimeDifference(response.data.last_active);
       } catch (error) {
         console.log("GET DATA FAILED : ",error);
@@ -202,7 +215,10 @@ export default {
     },
     sendMessage() {
       if (this.newMessage.trim() !== '') {
-        this.messages.push({ sender: 'me', text: this.newMessage });
+        this.socket.emit(`send_message`,{
+           conversation_id : this.userInfo.conversation_id, sender_id : this.$userProfile.id, content: this.newMessage
+        });
+        this.messages.push({sender, content : e.content});
         this.newMessage = '';
         this.isTyping = false;
       }

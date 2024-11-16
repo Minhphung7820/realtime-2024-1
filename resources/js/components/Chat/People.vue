@@ -7,7 +7,7 @@
         <div class="flex-1 max-w-xs">
           <div class="flex justify-between items-center w-full">
             <h4 class="font-semibold text-sm sm:text-base truncate">{{ person.name }}</h4>
-            <span v-if="!person.isOnline" class="text-xs text-gray-400 last-online">{{ person.last_active }}</span>
+            <span v-if="!person.isOnline" class="text-xs text-gray-400 last-online">{{ person.last_active_string }}</span>
           </div>
         </div>
         <span :class="person.isOnline ? 'bg-green-500' : 'bg-gray-400'" class="status-dot"></span>
@@ -32,8 +32,6 @@ export default {
     this.$socket.on('user_list',this.handleUserWithStatus);
     this.$socket.on('user_disconnect_list', this.handleUserWithStatus);
     // Chạy hàm cập nhật last_active mỗi giây
-
-    //
     this.updateLastActiveInterval = setInterval(this.updateLastActive, 1000);
   },
   beforeUnmount() {
@@ -63,7 +61,8 @@ export default {
         const getPeople = await this.$axios.get(`/api/get-people?limit=${limitPeople}`);
         this.people = getPeople.data.data.map(person => ({
           ...person,
-          isOnline: false // Mặc định offline
+          isOnline: false, // Mặc định offline
+          last_active_string: this.formatTimeDifference(person.last_active)
         }));
       } catch (error) {
         console.log('Failed get data:', error);
@@ -105,7 +104,7 @@ export default {
     updateLastActive() {
       this.people.forEach(person => {
         if (person.isOnline && person.last_active) {
-          person.last_active = this.formatTimeDifference(person.last_active);
+          person.last_active_string = this.formatTimeDifference(person.last_active);
         }
       });
     }

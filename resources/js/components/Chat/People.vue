@@ -33,7 +33,6 @@ export default {
     this.$socket.on('user_disconnect_list', this.handleUserWithStatus);
     // Chạy hàm cập nhật last_active mỗi giây
     this.updateLastActiveInterval = setInterval(() => {
-        console.log('setInterval running');
         this.updateLastActive();
     }, 1000);
   },

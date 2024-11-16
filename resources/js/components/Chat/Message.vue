@@ -17,7 +17,7 @@
             class="w-3 h-3 rounded-full mr-1"
           ></span>
           <span class="text-sm sm:text-base text-gray-600">
-            {{ userInfo.isOnline ? 'Đang hoạt động' : `Online ${userInfo.lastOnline}` }}
+            {{ userInfo.isOnline ? 'Đang hoạt động' : `${userInfo.lastOnline}` }}
           </span>
         </div>
       </div>
@@ -83,9 +83,12 @@ export default {
     };
   },
   async mounted(){
+     const socket = initializeSocket(this.$userProfile.id);
      await this.getConversation();
      await this.getStatusUserOnline();
      await this.getMessage();
+     socket.on('user_list',this.handleUserWithStatus);
+     socket.on('user_disconnect_list', this.handleUserWithStatus);
   },
   watch: {
     dataMessage: {
@@ -112,8 +115,7 @@ export default {
         this.userInfo.id = response.data.id;
         this.userInfo.avatar = response.data.avatar;
         this.userInfo.name = response.data.name;
-        initializeSocket(this.$userProfile.id).on('user_list',this.handleUserWithStatus);
-        initializeSocket(this.$userProfile.id).on('user_disconnect_list', this.handleUserWithStatus);
+        this.userInfo.lastOnline = this.formatTimeDifference(response.data.last_active);
       } catch (error) {
         console.log("GET DATA FAILED : ",error);
       }
@@ -123,16 +125,39 @@ export default {
           const response = await this.$axios.get(`http://localhost:6060/api/online-users`);
           const onlineUsers = response.data.data;
           this.userInfo.isOnline = onlineUsers.some(item => parseInt(item.userID) === parseInt(this.userInfo.id));
-          console.log(this.userInfo.isOnline,response.data.data);
-
         } catch (error) {
           console.error('Failed to fetch online users:', error);
         }
     },
     handleUserWithStatus(user){
-        if(user.userID === this.userInfo.id){
+        if(parseInt(user.userID) === parseInt(this.userInfo.id)){
           this.userInfo.isOnline = user.online;
+          this.userInfo.lastOnline = this.formatTimeDifference(user.last_active);
         }
+    },
+    formatTimeDifference(lastActive) {
+      const now = new Date();
+      const lastActiveDate = new Date(lastActive);
+      const diffSeconds = Math.floor((now - lastActiveDate) / 1000); // Chênh lệch giây
+
+      if (diffSeconds < 60) {
+        return 'Vừa truy cập';
+      } else if (diffSeconds < 3600) {
+        const minutes = Math.floor(diffSeconds / 60);
+        return `${minutes} phút trước`;
+      } else if (diffSeconds < 86400) {
+        const hours = Math.floor(diffSeconds / 3600);
+        return `${hours} giờ trước`;
+      } else if (diffSeconds < 604800) {
+        const days = Math.floor(diffSeconds / 86400);
+        return `${days} ngày trước`;
+      } else if (diffSeconds < 2592000) {
+        const weeks = Math.floor(diffSeconds / 604800);
+        return `${weeks} tuần trước`;
+      } else {
+        const months = Math.floor(diffSeconds / 2592000);
+        return `${months} tháng trước`;
+      }
     },
     scrollToBottom() {
     const messageContent = this.$refs.messageContent;

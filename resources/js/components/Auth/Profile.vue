@@ -1,11 +1,11 @@
 <template>
-  <div class="profile-container bg-white shadow-md rounded-lg p-4 flex flex-col items-center">
+  <div class="profile-container bg-gray-50 shadow-md rounded-lg p-4 flex items-center gap-4">
     <!-- Avatar -->
-    <div class="relative w-20 h-20">
+    <div class="relative flex-shrink-0">
       <img
         :src="user.avatar"
         alt="Avatar"
-        class="rounded-full w-full h-full object-cover"
+        class="rounded-full w-16 h-16 sm:w-20 sm:h-20 object-cover border-2 border-gray-300"
       />
       <span
         class="absolute bottom-1 right-1 w-4 h-4 rounded-full"
@@ -14,16 +14,16 @@
     </div>
 
     <!-- Thông tin người dùng -->
-    <div class="mt-4 text-center">
-      <h3 class="font-bold text-lg text-gray-700">{{ user.name }}</h3>
-      <p class="text-gray-500 text-sm">{{ user.email }}</p>
+    <div class="flex-1 min-w-0">
+      <h3 class="font-bold text-lg text-gray-700 truncate">{{ user.name }}</h3>
+      <p class="text-gray-500 text-sm truncate">{{ user.email }}</p>
       <p class="text-sm mt-1" :class="{'text-green-500': user.isOnline, 'text-gray-400': !user.isOnline}">
-        {{ user.isOnline ? 'Đang trực tuyến' : 'Ngoại tuyến' }}
+        {{ user.isOnline ? 'Online' : 'Offline' }}
       </p>
     </div>
 
     <!-- Nút hành động -->
-    <div class="mt-4 flex gap-2">
+    <div class="flex gap-2 flex-shrink-0">
       <button
         @click="editProfile"
         class="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-700"
@@ -56,7 +56,7 @@ export default {
   data() {
     return {
       user: {
-        avatar : 'https://st3.depositphotos.com/1767687/16607/v/450/depositphotos_166074422-stock-illustration-default-avatar-profile-icon-grey.jpg',
+        avatar: 'https://st3.depositphotos.com/1767687/16607/v/450/depositphotos_166074422-stock-illustration-default-avatar-profile-icon-grey.jpg',
         name: '',
         email: '',
         isOnline: false,
@@ -95,16 +95,47 @@ export default {
 
 <style scoped>
 .profile-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Giữ khoảng cách giữa các phần tử */
+  background-color: #f9fafb; /* Đồng bộ với nền trang */
+  border-radius: 0;
+  padding: 16px;
   width: 100%;
-  max-width: 300px;
-  margin: auto;
+  max-width: 100%; /* Tránh tràn layout */
+  gap: 16px;
+}
+.profile-container, .container, .left-pane, .right-pane {
+  box-shadow: none !important;
 }
 
 img {
   border: 2px solid #e5e7eb;
 }
 
-button:hover {
+button {
   transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #2563eb; /* Màu hover xanh đậm hơn */
+}
+
+button.bg-red-500:hover {
+  background-color: #dc2626; /* Màu hover đỏ đậm hơn */
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flex-shrink-0 {
+  flex-shrink: 0; /* Không thu nhỏ các nút hoặc avatar */
+}
+
+.min-w-0 {
+  min-width: 0; /* Giúp xử lý tốt hơn với flex khi văn bản dài */
 }
 </style>

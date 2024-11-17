@@ -154,7 +154,7 @@ export default {
   },
   async mounted() {
     await this.getPeople();
-    await this.fetchOnlineUsers();
+    await this.setStatusUserOnline();
     await this.getRequestFriend();
     // Lắng nghe sự kiện từ WebSocket
     this.$socket.on('user_list',this.handleUserWithStatus);
@@ -191,7 +191,7 @@ export default {
 
           this.countRequestFriend = this.friendRequests.length;
           await this.getPeople();
-          await this.fetchOnlineUsers();
+          await this.setStatusUserOnline();
         } catch (error) {
           console.error('Failed to fetch online users:', error);
         }
@@ -236,7 +236,7 @@ export default {
         console.error('Failed to fetch online users:', error);
       }
     },
-    async fetchOnlineUsers() {
+    async setStatusUserOnline() {
         try {
           const response = await this.$axios.get('http://localhost:6060/api/online-users');
           const onlineUsers = response.data.data;

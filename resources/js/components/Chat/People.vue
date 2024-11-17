@@ -131,7 +131,7 @@
             <button
               v-else-if="user.status_friend === 'pending'"
               disabled
-              class="px-2 py-1 bg-yellow-500 text-white rounded text-xs cursor-not-allowed"
+              class="px-2 py-1 bg-blue-500 text-white rounded text-xs cursor-not-allowed"
             >
               Chờ chấp nhận
             </button>

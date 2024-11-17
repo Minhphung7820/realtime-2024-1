@@ -36,7 +36,10 @@
     <!-- Nội dung các tab -->
     <div v-if="activeTab === 'friends'">
       <!-- Danh sách bạn bè (cũ) -->
-      <ul>
+      <div v-if="isLoading" class="loading-container">
+        <div class="spinner"></div>
+      </div>
+      <ul v-else>
         <li
           v-for="(person, index) in people"
           :key="index"

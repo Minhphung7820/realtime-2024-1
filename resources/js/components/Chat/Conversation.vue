@@ -1,7 +1,10 @@
 <template>
   <div class="conversation-list bg-gray-100 p-4">
     <h3 class="font-bold text-lg mb-2">Cuộc trò chuyện</h3>
-    <ul>
+    <div v-if="isLoading" class="loading-container">
+    <div class="spinner"></div>
+    </div>
+    <ul v-else>
       <li
         v-for="(conversation, index) in conversations"
         :key="index"
@@ -36,14 +39,40 @@ export default {
   data() {
     return {
       conversations: [],
+      isLoading : true,
+      socket: null
     };
   },
   async mounted()
   {
-     await this.getConversations();
-     await this.fetchOnlineUsers();
-    this.$socket.on('user_list',this.handleUserWithStatus);
-    this.$socket.on('user_disconnect_list', this.handleUserWithStatus);
+    this.socket = this.$socket;
+    await this.getConversations();
+    await this.fetchOnlineUsers();
+    this.socket.on('user_list',this.handleUserWithStatus);
+    this.socket.on('user_disconnect_list', this.handleUserWithStatus);
+   //
+   this.conversations.forEach((convo) => {
+      this.socket.emit('join_conversation', convo.conversation_id); // Join tất cả các phòng của user
+   });
+   //
+    this.socket.on('receive_message', (e) => {
+      console.log(e);
+
+      const matchingConversation = this.conversations.find(convo => parseInt(convo.conversation_id) === parseInt(e.conversation_id));
+
+      if (matchingConversation && parseInt(e.sender_id) !== parseInt(this.$userProfile.id)) {
+        if (this.$parent.dataMessage.id !== parseInt(e.conversation_id)) {
+          // Nếu cuộc trò chuyện không được mở, tăng số lượng tin nhắn chưa đọc
+          matchingConversation.lastMessage = e.content;
+          matchingConversation.unread = (matchingConversation.unread || 0) + 1;
+        } else {
+          // Nếu cuộc trò chuyện đang được mở, có thể xử lý tin nhắn ngay tại đây
+          console.log("Tin nhắn mới trong cuộc trò chuyện đang mở:", e.content);
+        }
+      }
+    });
+   //
+    this.isLoading = false;
   },
   methods: {
     openChat(userId, type) {
@@ -51,6 +80,12 @@ export default {
         // Nếu người dùng đang mở chính họ, không làm gì cả
         return;
       }
+       // Reset số tin nhắn chưa đọc
+      const matchingConversation = this.conversations.find(convo => parseInt(convo.id) === parseInt(userId));
+      if (matchingConversation) {
+        matchingConversation.unread = 0;
+      }
+      //
       this.$emit('open-chat', userId, type); // Phát sự kiện open-chat lên cha
     },
     async fetchOnlineUsers() {

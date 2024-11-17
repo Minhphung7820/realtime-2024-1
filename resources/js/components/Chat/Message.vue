@@ -124,7 +124,7 @@ export default {
   beforeUnmount() {
     // Dừng interval khi component bị hủy
     if(this.socket && this.userInfo.conversation_id){
-      this.socket.emit('leave_conversation', this.userInfo.conversation_id);
+      // this.socket.emit('leave_conversation', this.userInfo.conversation_id);
     }
     clearInterval(this.updateLastActiveFriendInterval);
   },
@@ -135,7 +135,7 @@ export default {
         if (newData) {
           // Reset dữ liệu
           if(this.socket && this.userInfo.conversation_id){
-            this.socket.emit('leave_conversation', this.userInfo.conversation_id);
+            // this.socket.emit('leave_conversation', this.userInfo.conversation_id);
             this.socket = null;
           }
           this.isLoading = true;

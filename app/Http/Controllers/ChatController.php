@@ -165,15 +165,15 @@ class ChatController extends Controller
 
             // Lấy danh sách các cuộc trò chuyện và người đang trò chuyện với bạn
             $conversations = DB::table('conversations')
-                ->join('conversation_participants as cp1', 'conversations.id', '=', 'cp1.conversation_id') // Join để tìm cuộc trò chuyện của bạn
-                ->join('conversation_participants as cp2', 'conversations.id', '=', 'cp2.conversation_id') // Join để tìm người khác trong cuộc trò chuyện
-                ->join('users as ucp2', 'cp2.user_id', '=', 'ucp2.id')
-                ->join(DB::raw(
+                ->leftJoin('conversation_participants as cp1', 'conversations.id', '=', 'cp1.conversation_id') // Join để tìm cuộc trò chuyện của bạn
+                ->leftJoin('conversation_participants as cp2', 'conversations.id', '=', 'cp2.conversation_id') // Join để tìm người khác trong cuộc trò chuyện
+                ->leftJoin('users as ucp2', 'cp2.user_id', '=', 'ucp2.id')
+                ->leftJoin(DB::raw(
                     "(
                        SELECT conversation_id, MAX(id) as latest_id FROM messages GROUP BY conversation_id
                     ) as message_latest"
                 ), 'message_latest.conversation_id', '=', 'conversations.id')
-                ->join('messages', function ($join) {
+                ->leftJoin('messages', function ($join) {
                     $join->on('conversations.id', '=', 'messages.conversation_id');
                     $join->on('message_latest.latest_id', '=', 'messages.id');
                 })
@@ -205,7 +205,8 @@ class ChatController extends Controller
                     DB::raw('COALESCE(total_unread, 0) as unread'),
                     DB::raw('false as isOnline')
                 )
-                ->limit(5)
+                ->orderByRaw('GREATEST(conversations.created_at, messages.created_at) DESC')
+                // ->limit(5)
                 ->get();
 
             // Hiển thị kết quả

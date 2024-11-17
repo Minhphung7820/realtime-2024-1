@@ -250,6 +250,7 @@ export default {
                sender_id : this.$userProfile.id,
                content: this.newMessage
              });
+             this.$emit('move-conv-to-top' , {id:this.userInfo.conversation_id});
         this.newMessage = '';
          } catch (error) {
               console.log("GET DATA FAILED : ",error);

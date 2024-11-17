@@ -36,12 +36,26 @@
 <script>
 export default {
   inject: ['$axios','$userProfile','$socket'],
+  props:{
+     dataMoveConvToTop:{
+        type: Object,
+        required : false
+     }
+  },
   data() {
     return {
       conversations: [],
       isLoading : true,
       socket: null
     };
+  },
+  watch: {
+    dataMoveConvToTop: {
+      immediate: true, // Lắng nghe ngay từ khi component được mount
+      handler(newData) {
+        this.moveConvToTop(newData);
+      },
+    },
   },
   async mounted()
   {
@@ -75,6 +89,21 @@ export default {
     this.isLoading = false;
   },
   methods: {
+    moveConvToTop(objectConv)
+    {
+        if (Object.keys(objectConv).length > 0) {
+          // Tìm và đưa cuộc trò chuyện lên đầu danh sách
+          const conversationIndex = this.conversations.findIndex(
+            (convo) => parseInt(convo.conversation_id) === parseInt(objectConv.id)
+          );
+
+          if (conversationIndex !== -1) {
+            // Di chuyển cuộc trò chuyện lên đầu
+            const [movedConversation] = this.conversations.splice(conversationIndex, 1);
+            this.conversations.unshift(movedConversation);
+          }
+        }
+    },
     async openChat(userId, type) {
       if (this.$parent.dataMessage.id === userId && this.$parent.dataMessage.type === type) {
         // Nếu người dùng đang mở chính họ, không làm gì cả

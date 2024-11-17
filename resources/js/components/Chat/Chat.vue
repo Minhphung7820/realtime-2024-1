@@ -3,8 +3,8 @@
     <!-- Hiển thị Conversation và People trên màn hình nhỏ, ẩn khi đang xem Message -->
     <div v-if="!isChatOpen || isDesktop" class="left-pane w-full sm:w-1/2 md:w-1/3 border-r border-gray-300 pr-4 overflow-y-auto">
       <profile/>
-      <Conversation @open-chat="openChat" />
-      <People @open-chat="openChat" />
+      <Conversation :dataMoveConvToTop="dataMoveConvToTop" @open-chat="openChat" />
+      <People @move-conv-to-top="moveConvToTop" @open-chat="openChat" />
     </div>
 
     <!-- Hiển thị Message component khi đang xem chat hoặc trên màn hình lớn -->
@@ -15,7 +15,7 @@
         </svg>
         Quay lại
       </button>
-      <Message :dataMessage="dataMessage" />
+      <Message @move-conv-to-top="moveConvToTop" :dataMessage="dataMessage" />
     </div>
   </div>
 </template>
@@ -35,12 +35,17 @@ export default {
   },
   data() {
     return {
+      dataMoveConvToTop: {},
       isChatOpen: false,
       isDesktop: window.innerWidth >= 640,
       dataMessage : {}
     };
   },
   methods: {
+    moveConvToTop(data)
+    {
+       this.dataMoveConvToTop = data;
+    },
     openChat(data,type) {
       this.isChatOpen = true;
       this.dataMessage = {

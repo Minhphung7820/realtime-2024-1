@@ -1,15 +1,16 @@
 <template>
-  <div class="conversation-list bg-gray-100 p-4">
+  <div>
     <h3 class="font-bold text-lg mb-2">Cuộc trò chuyện</h3>
-    <div v-if="isLoading" class="loading-container">
-    <div class="spinner"></div>
-    </div>
-    <ul v-else>
+    <transition-group
+      name="smooth-move"
+      tag="ul"
+      class="conversation-list"
+    >
       <li
         v-for="(conversation, index) in conversations"
-        :key="index"
+        :key="conversation.conversation_id"
         class="conversation-item flex items-center p-3 border-b cursor-pointer hover:bg-gray-200"
-        @click="openChat(conversation.id,'private')"
+        @click="openChat(conversation.id, 'private')"
       >
         <!-- Avatar -->
         <img :src="conversation.avatar" alt="Avatar" class="w-10 h-10 rounded-full mr-3" />
@@ -23,13 +24,20 @@
               {{ conversation.unread > 5 ? '5+' : conversation.unread }}
             </span>
           </div>
-          <p class="text-gray-500 text-sm truncate">{{ conversation.lastMessage }}</p>
+            <p class="text-gray-500 text-sm truncate">
+              <span v-if="!conversation.lastMessage" class="font-bold">
+                Bắt đầu trò chuyện nào!
+              </span>
+              <span v-else>
+                {{ conversation.lastMessage }}
+              </span>
+            </p>
         </div>
 
         <!-- Trạng thái online/offline -->
         <span :class="conversation.isOnline ? 'bg-green-500' : 'bg-gray-400'" class="status-dot w-3 h-3 rounded-full ml-3"></span>
       </li>
-    </ul>
+    </transition-group>
   </div>
 </template>
 
@@ -70,7 +78,6 @@ export default {
    });
    //
     this.socket.on('receive_message', (e) => {
-      console.log(e);
 
       const matchingConversation = this.conversations.find(convo => parseInt(convo.conversation_id) === parseInt(e.conversation_id));
 
@@ -79,6 +86,7 @@ export default {
           // Nếu cuộc trò chuyện không được mở, tăng số lượng tin nhắn chưa đọc
           matchingConversation.lastMessage = e.content;
           matchingConversation.unread = (matchingConversation.unread || 0) + 1;
+          this.moveConvToTop({id:e.conversation_id});
         } else {
           // Nếu cuộc trò chuyện đang được mở, có thể xử lý tin nhắn ngay tại đây
           console.log("Tin nhắn mới trong cuộc trò chuyện đang mở:", e.content);
@@ -89,20 +97,26 @@ export default {
     this.isLoading = false;
   },
   methods: {
-    moveConvToTop(objectConv)
-    {
-        if (Object.keys(objectConv).length > 0) {
-          // Tìm và đưa cuộc trò chuyện lên đầu danh sách
-          const conversationIndex = this.conversations.findIndex(
-            (convo) => parseInt(convo.conversation_id) === parseInt(objectConv.id)
-          );
+    moveConvToTop(objectConv) {
+      if (Object.keys(objectConv).length > 0) {
+        // Tìm vị trí của cuộc trò chuyện
+        const conversationIndex = this.conversations.findIndex(
+          (convo) => parseInt(convo.conversation_id) === parseInt(objectConv.id)
+        );
 
-          if (conversationIndex !== -1) {
-            // Di chuyển cuộc trò chuyện lên đầu
-            const [movedConversation] = this.conversations.splice(conversationIndex, 1);
-            this.conversations.unshift(movedConversation);
+        if (conversationIndex !== -1) {
+          // Gắn content của cuộc trò chuyện thành objectConv.content
+          if(objectConv.content){
+            this.conversations[conversationIndex].lastMessage = objectConv.content;
           }
+          // Di chuyển cuộc trò chuyện lên đầu
+          const [movedConversation] = this.conversations.splice(conversationIndex, 1);
+          this.conversations.unshift(movedConversation);
+
+          // Đảm bảo reactivity để Vue trigger lại hiệu ứng
+          this.conversations = [...this.conversations];
         }
+      }
     },
     async openChat(userId, type) {
       if (this.$parent.dataMessage.id === userId && this.$parent.dataMessage.type === type) {
@@ -163,6 +177,20 @@ export default {
 </script>
 
 <style scoped>
+/* Định nghĩa hiệu ứng chuyển động */
+.smooth-move-enter-active,
+.smooth-move-leave-active {
+  transition: transform 0.5s ease-in-out;
+}
+
+.smooth-move-enter-from,
+.smooth-move-leave-to {
+  transform: translateY(20px);
+}
+
+.smooth-move-move {
+  transition: transform 0.5s ease-in-out;
+}
 .conversation-item {
   display: flex;
   align-items: center;

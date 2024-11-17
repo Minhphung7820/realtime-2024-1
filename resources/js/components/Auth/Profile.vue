@@ -3,7 +3,7 @@
     <!-- Avatar -->
     <div class="relative w-20 h-20">
       <img
-        :src="'https://ui-avatars.com/api/?name=' + user.name"
+        :src="user.avatar"
         alt="Avatar"
         class="rounded-full w-full h-full object-cover"
       />
@@ -56,6 +56,7 @@ export default {
   data() {
     return {
       user: {
+        avatar : 'https://st3.depositphotos.com/1767687/16607/v/450/depositphotos_166074422-stock-illustration-default-avatar-profile-icon-grey.jpg',
         name: '',
         email: '',
         isOnline: false,

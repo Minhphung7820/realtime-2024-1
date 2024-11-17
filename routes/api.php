@@ -18,4 +18,5 @@ Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api')
 Route::get('get-people', [ChatController::class, 'getPeople'])->middleware('auth:api');
 Route::get('get-message', [ChatController::class, 'getMessage'])->middleware('auth:api');
 Route::post('save-message', [ChatController::class, 'saveMessage'])->middleware('auth:api');
+Route::get('get-list-conversation', [ChatController::class, 'listConversation'])->middleware('auth:api');
 Route::get('get-detail-conversation', [ChatController::class, 'detailConversation'])->middleware('auth:api');

@@ -6,7 +6,7 @@
         v-for="(conversation, index) in conversations"
         :key="index"
         class="conversation-item flex items-center p-3 border-b cursor-pointer hover:bg-gray-200"
-        @click="openChat"
+        @click="openChat(conversation.id,'private')"
       >
         <!-- Avatar -->
         <img :src="conversation.avatar" alt="Avatar" class="w-10 h-10 rounded-full mr-3" />
@@ -32,20 +32,61 @@
 
 <script>
 export default {
+  inject: ['$axios','$userProfile','$socket'],
   data() {
     return {
-      conversations: [
-        { name: 'Người A', avatar: 'https://via.placeholder.com/40', lastMessage: 'Hello!', isOnline: true, unread: 3 },
-        { name: 'Người B', avatar: 'https://via.placeholder.com/40', lastMessage: 'Lâu rồi không gặp!', isOnline: false, unread: 5 },
-        { name: 'Người C', avatar: 'https://via.placeholder.com/40', lastMessage: 'Bạn khỏe không?', isOnline: true, unread: 1 },
-        { name: 'Người D', avatar: 'https://via.placeholder.com/40', lastMessage: 'Hẹn gặp lại sau nhé!', isOnline: false, unread: 6 },
-      ],
+      conversations: [],
     };
   },
+  async mounted()
+  {
+     await this.getConversations();
+     await this.fetchOnlineUsers();
+    this.$socket.on('user_list',this.handleUserWithStatus);
+    this.$socket.on('user_disconnect_list', this.handleUserWithStatus);
+  },
   methods: {
-    openChat() {
-      this.$emit('open-chat'); // Phát sự kiện open-chat lên cha
-    }
+    openChat(userId, type) {
+      if (this.$parent.dataMessage.id === userId && this.$parent.dataMessage.type === type) {
+        // Nếu người dùng đang mở chính họ, không làm gì cả
+        return;
+      }
+      this.$emit('open-chat', userId, type); // Phát sự kiện open-chat lên cha
+    },
+    async fetchOnlineUsers() {
+        try {
+          const response = await this.$axios.get('http://localhost:6060/api/online-users');
+          const onlineUsers = response.data.data;
+
+          // Cập nhật trạng thái online vào mảng people
+          onlineUsers.forEach(user => {
+            const matchingPerson = this.conversations.find(person => person.id === parseInt(user.userID)
+            && person.type ==='private');
+            if (matchingPerson) {
+              matchingPerson.isOnline = user.isOnline;
+            }
+          });
+        } catch (error) {
+          console.error('Failed to fetch online users:', error);
+        }
+    },
+    async getConversations()
+    {
+       try {
+         const response = await this.$axios.get(`/api/get-list-conversation`);
+         this.conversations = response.data;
+       } catch (error) {
+        console.log("GET DATA FAILED WITH ERROR : ",error);
+
+       }
+    },
+    handleUserWithStatus(user) {
+      const matchingPerson = this.conversations.find(person => person.id === parseInt(user.userID)
+      && person.type ==='private');
+      if (matchingPerson) {
+        matchingPerson.isOnline = user.online;
+      }
+    },
   }
 };
 </script>

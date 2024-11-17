@@ -105,26 +105,21 @@ class ChatController extends Controller
             $conversation = DB::table('conversations')
                 ->join('conversation_participants as cp1', 'conversations.id', '=', 'cp1.conversation_id')
                 ->join('conversation_participants as cp2', 'conversations.id', '=', 'cp2.conversation_id')
+                ->join('users as ucp2', 'cp2.user_id', '=', 'ucp2.id')
                 ->where('conversations.type', 'private')
                 ->where('cp1.user_id', $userId)
                 ->where('cp2.user_id', $id)
-                ->select('conversations.id as conversation_id')
-                ->first();
-
-            $info =  DB::table('users')
-                ->where('id', $id)
                 ->select([
-                    'id',
-                    'name',
-                    'avatar',
-                    'last_active'
+                    'ucp2.id',
+                    'ucp2.name',
+                    'ucp2.avatar',
+                    'ucp2.last_active',
+                    'conversations.id as conversation_id'
                 ])
                 ->first();
-            if ($info) {
-                $info->conversation_id = $conversation->conversation_id;
-            }
+
             return response()
-                ->json($info);
+                ->json($conversation);
         }
 
         if ($type === 'group') {
@@ -153,6 +148,65 @@ class ChatController extends Controller
                     ]
                 );
             });
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function listConversation(Request $request)
+    {
+        try {
+            $userId = auth()->guard('api')->id();
+
+            // Lấy danh sách các cuộc trò chuyện và người đang trò chuyện với bạn
+            $conversations = DB::table('conversations')
+                ->join('conversation_participants as cp1', 'conversations.id', '=', 'cp1.conversation_id') // Join để tìm cuộc trò chuyện của bạn
+                ->join('conversation_participants as cp2', 'conversations.id', '=', 'cp2.conversation_id') // Join để tìm người khác trong cuộc trò chuyện
+                ->join('users as ucp2', 'cp2.user_id', '=', 'ucp2.id')
+                ->join(DB::raw(
+                    "(
+                       SELECT conversation_id, MAX(id) as latest_id FROM messages GROUP BY conversation_id
+                    ) as message_latest"
+                ), 'message_latest.conversation_id', '=', 'conversations.id')
+                ->join('messages', function ($join) {
+                    $join->on('conversations.id', '=', 'messages.conversation_id');
+                    $join->on('message_latest.latest_id', '=', 'messages.id');
+                })
+                ->leftJoinSub(
+                    DB::table('messages')
+                        ->select(
+                            'conversation_id',
+                            DB::raw('COUNT(*) as total_unread')
+                        )
+                        ->where('seen', 0)
+                        ->where('sender_id', '!=', $userId)
+                        ->groupBy('conversation_id'),
+                    'messages_unread',
+                    function ($join) {
+                        $join->on('conversations.id', '=', 'messages_unread.conversation_id');
+                    }
+                )
+                ->where('cp1.user_id', $userId) // Điều kiện: cuộc trò chuyện của bạn
+                ->where('cp2.user_id', '!=', $userId) // Điều kiện: người khác
+                ->select(
+                    'ucp2.id',
+                    'ucp2.name',
+                    'ucp2.avatar',
+                    'ucp2.last_active',
+                    'conversations.type',
+                    'conversations.id as conversation_id',
+                    'messages.content as lastMessage',
+                    'messages.created_at as sent_at',
+                    DB::raw('COALESCE(total_unread, 0) as unread'),
+                    DB::raw('false as isOnline')
+                )
+                ->limit(5)
+                ->get();
+
+            // Hiển thị kết quả
+            return response()->json($conversations);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()

@@ -67,6 +67,7 @@ export default {
 </script>
 
 <style scoped>
+/* Container styles */
 .chat-container {
   display: flex;
   flex: 1;
@@ -75,15 +76,44 @@ export default {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+/* Left pane styles */
 .left-pane {
   padding-right: 1rem;
   border-right: 1px solid #e5e7eb;
+  overflow-y: auto; /* Ensure the scrollbar is visible */
 }
 
+/* Right pane styles */
 .right-pane {
   padding-left: 1rem;
   display: flex;
   flex-direction: column;
-  /* overflow-y: auto; */
+  overflow-y: auto; /* Ensure the scrollbar is visible */
+}
+
+/* Customize scrollbar for webkit browsers */
+.left-pane::-webkit-scrollbar,
+.right-pane::-webkit-scrollbar {
+  width: 8px; /* Adjust the width of the scrollbar */
+}
+
+.left-pane::-webkit-scrollbar-track,
+.right-pane::-webkit-scrollbar-track {
+  background: #e5e7eb; /* Light gray for the track */
+  border-radius: 10px; /* Rounded corners */
+}
+
+.left-pane::-webkit-scrollbar-thumb,
+.right-pane::-webkit-scrollbar-thumb {
+  background: #b3bdce; /* Blue color (similar to icon color) */
+  border-radius: 10px; /* Rounded corners */
+  border: 2px solid transparent; /* Optional padding effect */
+  background-clip: padding-box;
+}
+
+/* Hover effect for scrollbar */
+.left-pane::-webkit-scrollbar-thumb:hover,
+.right-pane::-webkit-scrollbar-thumb:hover {
+  background: #b2bbce; /* Darker blue on hover */
 }
 </style>

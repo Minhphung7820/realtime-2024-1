@@ -119,12 +119,43 @@
           />
           <div class="flex-1">
             <h4 class="font-semibold text-sm sm:text-base truncate">{{ user.name }}</h4>
-            <button v-if="user.status_friend === 'not_friend'"
+            <!-- Nút Kết bạn -->
+            <button
+              v-if="user.status_friend === 'not_friend'"
               @click="sendFriendRequest(user.id)"
               class="px-2 py-1 bg-blue-500 text-white rounded text-xs"
             >
               Kết bạn
             </button>
+            <!-- Nút chờ chấp nhận -->
+            <button
+              v-else-if="user.status_friend === 'pending'"
+              disabled
+              class="px-2 py-1 bg-yellow-500 text-white rounded text-xs cursor-not-allowed"
+            >
+              Chờ chấp nhận
+            </button>
+            <!-- Hiển thị bạn bè với dấu tick -->
+            <div
+              v-else-if="user.status_friend === 'accepted'"
+              class="flex items-center text-green-500 text-sm font-semibold"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-5 h-5 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              Bạn bè
+            </div>
           </div>
         </li>
       </ul>
@@ -206,19 +237,24 @@ export default {
           console.error('Failed to fetch online users:', error);
         }
     },
-    async sendFriendRequest(userID)
-    {
+    async sendFriendRequest(userID) {
       try {
         await this.$axios.post(`/api/send-request-friend`, {
-             friend_id : userID
+          friend_id: userID,
         });
         const data = {
-            sender_id: this.$userProfile.id,
-            receiver_id: userID,
+          sender_id: this.$userProfile.id,
+          receiver_id: userID,
         };
         this.$socket.emit('send_friend_request', data);
+
+        // Cập nhật trạng thái của người dùng trong danh sách searchResults
+        const user = this.searchResults.find((u) => u.id === userID);
+        if (user) {
+          user.status_friend = 'pending';
+        }
       } catch (error) {
-        console.error('Failed to fetch online users:', error);
+        console.error('Failed to send friend request:', error);
       }
     },
     async getOtherUser()

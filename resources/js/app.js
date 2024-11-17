@@ -10,18 +10,18 @@ const baseURL = window.baseURL;
 let userProfile;
 // Cấu hình axios với baseURL lấy từ window.baseURL
 const axiosInstance = axios.create({
-  baseURL: baseURL,
+    baseURL: baseURL,
 });
 
 // Thêm interceptor để đính kèm Bearer token vào mỗi request
 axiosInstance.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
 }, error => {
-  return Promise.reject(error);
+    return Promise.reject(error);
 });
 
 
@@ -31,36 +31,36 @@ const token = localStorage.getItem('token');
 let socket;
 
 if (token) {
-  try {
-    const getProfile = await axiosInstance.get('/api/get-profile');
-    const userID = getProfile.data.id;
-    userProfile = getProfile.data;
-    // Khởi tạo socket khi user đã đăng nhập
-    socket = initializeSocket(userID);
-    app.provide('$socket', socket);
-  } catch (error) {
-    console.error("Failed to load profile:", error);
-  }
+    try {
+        const getProfile = await axiosInstance.get('/api/get-profile');
+        const userID = getProfile.data.id;
+        userProfile = getProfile.data;
+        // Khởi tạo socket khi user đã đăng nhập
+        socket = initializeSocket(userID);
+        app.provide('$socket', socket);
+    } catch (error) {
+        console.error("Failed to load profile:", error);
+    }
 }
 // Interceptor để kiểm tra mã trạng thái của phản hồi
 axiosInstance.interceptors.response.use(
-  response => response,
-  error => {
-    if (error.response && error.response.status === 401) {
-      // Xóa token nếu có
-      localStorage.removeItem('token');
-      // Ngắt kết nối socket nếu đang kết nối
-      if (socket) {
-        socket.disconnect();
-        socket = null;
-        console.log('Socket connection terminated due to 401 response.');
-      }
+    response => response,
+    error => {
+        if (error.response && error.response.status === 401) {
+            // Xóa token nếu có
+            localStorage.removeItem('token');
+            // Ngắt kết nối socket nếu đang kết nối
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                console.log('Socket connection terminated due to 401 response.');
+            }
 
-      // Chuyển hướng về trang đăng nhập
-      router.push('/login');
+            // Chuyển hướng về trang đăng nhập
+            window.location = '/login';
+        }
+        return Promise.reject(error);
     }
-    return Promise.reject(error);
-  }
 );
 
 app.provide('$axios', axiosInstance);

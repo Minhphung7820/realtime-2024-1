@@ -36,9 +36,9 @@
     </div>
     <!-- Hiển thị trạng thái đang gõ -->
   </div>
-    <div v-if="isFriendTyping" class="typing-indicator text-gray-500 italic mt-2">
+  <div v-if="isFriendTyping" class="typing-indicator text-gray-500 italic mt-2">
       Người bên kia đang gõ...
-    </div>
+  </div>
   <!-- Input: Nhập và gửi tin nhắn -->
   <div class="message-input mt-2 flex items-center flex-shrink-0">
     <input
@@ -309,7 +309,7 @@ export default {
 }
 @media (max-width: 768px) {
   .message-box {
-    height: 100vh; /* Chiếm toàn bộ chiều cao thiết bị */
+    height: 90vh; /* Chiếm toàn bộ chiều cao thiết bị */
   }
 
   .message-header {

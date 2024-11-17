@@ -59,8 +59,9 @@ export default {
 
 <style scoped>
 .auth-container {
-  max-width: 400px;
+  width: 400px;
   margin: 0 auto;
+  max-height:500px ;
   padding: 20px;
   background-color: #f5f5f5;
   border-radius: 10px;

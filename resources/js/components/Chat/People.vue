@@ -187,6 +187,11 @@ export default {
           await this.$axios.put(`/api/change-request-friend/${requestId}`,{
             status
           });
+          this.friendRequests = this.friendRequests.filter(request => request.id !== requestId);
+
+          this.countRequestFriend = this.friendRequests.length;
+          await this.getPeople();
+          await this.fetchOnlineUsers();
         } catch (error) {
           console.error('Failed to fetch online users:', error);
         }
@@ -204,7 +209,6 @@ export default {
     async sendFriendRequest(userID)
     {
       try {
-        this.isLoading = true;
         await this.$axios.post(`/api/send-request-friend`, {
              friend_id : userID
         });
@@ -213,7 +217,6 @@ export default {
             receiver_id: userID,
         };
         this.$socket.emit('send_friend_request', data);
-        this.isLoading = false;
       } catch (error) {
         console.error('Failed to fetch online users:', error);
       }

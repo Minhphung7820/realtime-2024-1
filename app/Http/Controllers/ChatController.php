@@ -346,10 +346,12 @@ class ChatController extends Controller
                             ];
                             ConversationParticipant::insert($participants);
                         }
+                        $requestFriend->status = $request['status'];
+                        $requestFriend->save();
                     }
-                    $requestFriend->status = $request['status'];
-                    $requestFriend->save();
-
+                    if ($request['status'] === 'blocked') {
+                        $requestFriend->delete();
+                    }
                     return $requestFriend;
                 }
             });
@@ -371,6 +373,7 @@ class ChatController extends Controller
                         ->where('friendships.friend_id', $userId)
                         ->where('friendships.status', 'pending')
                         ->select('friendships.id', 'user_request.name', 'user_request.avatar')
+                        ->orderBy('friendships.created_at', 'desc')
                         ->paginate($request['limit'] ?? 5));
             });
         } catch (\Exception $e) {

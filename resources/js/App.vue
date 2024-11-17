@@ -1,12 +1,12 @@
 <template>
     <div class="app-container">
         <!-- Thanh điều hướng -->
-        <nav class="header">
+        <!-- <nav class="header">
             <router-link to="/">Home</router-link>
             <router-link v-if="isAuthenticated" to="/get-profile">Get Profile</router-link>
             <router-link v-if="isAuthenticated" to="/chat">Chat</router-link>
             <router-link v-else to="/login">Login</router-link>
-        </nav>
+        </nav> -->
 
         <!-- Đây là nơi Vue Router sẽ hiển thị các component theo route -->
         <router-view class="content"></router-view>
@@ -64,7 +64,7 @@ export default {
 }
 
 .content {
-    flex: 1; /* Chiếm toàn bộ chiều cao còn lại */
-    overflow-y: auto; /* Cho phép cuộn nếu nội dung vượt quá chiều cao */
+    flex: 1; /* Chiếm không gian còn lại */
+    overflow: hidden; /* Loại bỏ cuộn */
 }
 </style>

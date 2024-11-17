@@ -271,37 +271,63 @@ export default {
 </script>
 
 <style scoped>
-/* Container tổng */
 .message-box {
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Chiều cao toàn màn hình */
+  height: 100%; /* Chiếm toàn bộ chiều cao của container */
 }
 
-/* Phần tiêu đề (header) không cuộn */
 .message-header {
-  flex-shrink: 0; /* Không cho phép co lại khi cuộn */
+  flex-shrink: 0; /* Không co lại */
   border-bottom: 1px solid #e5e5e5;
 }
 
-/* Phần tin nhắn có cuộn */
 .message-content {
-  flex: 1; /* Chiếm phần còn lại của chiều cao */
-  overflow-y: auto; /* Cuộn dọc khi nội dung vượt quá chiều cao */
+  flex: 1; /* Chiếm phần còn lại của không gian */
+  overflow-y: auto; /* Cho phép cuộn nội dung */
   padding: 1rem;
   scrollbar-width: none; /* Ẩn thanh cuộn trên Firefox */
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column-reverse; /* Đảo ngược thứ tự hiển thị */
+}
+
+.loading-container {
+  height: 100%;
 }
 
 .message-content::-webkit-scrollbar {
   display: none; /* Ẩn thanh cuộn trên Chrome */
 }
 
-/* Phần nhập tin nhắn */
 .message-input {
-  flex-shrink: 0; /* Không cho phép co lại */
+  flex-shrink: 0; /* Không co lại */
+  padding: 1rem;
   border-top: 1px solid #e5e5e5;
+  background-color: white; /* Đảm bảo phần input không bị mờ hoặc ẩn */
+  display: flex;
+  align-items: center; /* Căn giữa nội dung theo trục ngang */
+}
+@media (max-width: 768px) {
+  .message-box {
+    height: 100vh; /* Chiếm toàn bộ chiều cao thiết bị */
+  }
+
+  .message-header {
+    padding: 8px; /* Giảm padding cho header trên màn hình nhỏ */
+  }
+
+  .message-input {
+    padding: 8px; /* Giảm padding cho input */
+    flex-direction: row; /* Giữ input và nút gửi trên cùng một dòng */
+  }
+
+  .message-input input {
+    font-size: 0.875rem; /* Giảm kích thước chữ */
+  }
+
+  .message-input button {
+    font-size: 0.875rem; /* Giảm kích thước nút gửi */
+  }
 }
 
 /* Căn phải tin nhắn của tôi */

@@ -1,21 +1,122 @@
 <template>
   <div class="people-list bg-gray-50 p-2 sm:p-4">
-    <h3 class="font-bold text-lg mb-2">Danh sách nhóm và bạn bè</h3>
-    <div v-if="isLoading" class="loading-container">
-      <div class="spinner"></div>
+    <h3 class="font-bold text-lg mb-2">Mọi người</h3>
+
+    <!-- Tabs -->
+    <div class="tabs flex border-b mb-4">
+      <button
+        class="tab px-4 py-2"
+        :class="{ 'border-b-2 border-blue-500 font-bold': activeTab === 'friends' }"
+        @click="activeTab = 'friends'"
+      >
+        Bạn bè
+      </button>
+      <button
+        class="tab px-4 py-2 relative"
+        :class="{ 'border-b-2 border-blue-500 font-bold': activeTab === 'requests' }"
+        @click="activeTab = 'requests'"
+      >
+        Yêu cầu kết bạn
+        <span
+          v-if="friendRequests && friendRequests.length > 0"
+          class="absolute top-0 right-0 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full"
+        >
+          {{ friendRequests.length }}
+        </span>
+      </button>
+      <button
+        class="tab px-4 py-2"
+        :class="{ 'border-b-2 border-blue-500 font-bold': activeTab === 'search' }"
+        @click="activeTab = 'search'"
+      >
+        Tìm kiếm
+      </button>
     </div>
-    <ul v-else>
-      <li v-for="(person, index) in people" :key="index" class="people-item flex items-center p-2 sm:p-3 border-b cursor-pointer hover:bg-gray-200" @click="openChat(person.id,'private')" >
-        <img :src="person.avatar" alt="Avatar" class="avatar w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 sm:mr-3" />
-        <div class="flex-1 max-w-xs">
-          <div class="flex justify-between items-center w-full">
-            <h4 class="font-semibold text-sm sm:text-base truncate">{{ person.name }}</h4>
-            <span v-if="!person.isOnline" class="text-xs text-gray-400 last-online">{{ person.last_active_string }}</span>
+
+    <!-- Nội dung các tab -->
+    <div v-if="activeTab === 'friends'">
+      <!-- Danh sách bạn bè (cũ) -->
+      <ul>
+        <li
+          v-for="(person, index) in people"
+          :key="index"
+          class="people-item flex items-center p-2 sm:p-3 border-b cursor-pointer hover:bg-gray-200"
+          @click="openChat(person.id, 'private')"
+        >
+          <img :src="person.avatar" alt="Avatar" class="avatar w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 sm:mr-3" />
+          <div class="flex-1 max-w-xs">
+            <div class="flex justify-between items-center w-full">
+              <h4 class="font-semibold text-sm sm:text-base truncate">{{ person.name }}</h4>
+              <span
+                v-if="!person.isOnline"
+                class="text-xs text-gray-400 last-online"
+              >
+                {{ person.last_active_string }}
+              </span>
+            </div>
           </div>
-        </div>
-        <span :class="person.isOnline ? 'bg-green-500' : 'bg-gray-400'" class="status-dot"></span>
-      </li>
-    </ul>
+          <span
+            :class="person.isOnline ? 'bg-green-500' : 'bg-gray-400'"
+            class="status-dot"
+          ></span>
+        </li>
+      </ul>
+    </div>
+
+    <div v-else-if="activeTab === 'requests'">
+      <!-- UI Yêu cầu kết bạn -->
+      <ul>
+        <li
+          v-for="(request, index) in friendRequests"
+          :key="index"
+          class="people-item flex items-center p-2 sm:p-3 border-b cursor-pointer hover:bg-gray-200"
+        >
+          <img
+            :src="request.avatar"
+            alt="Avatar"
+            class="avatar w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 sm:mr-3"
+          />
+          <div class="flex-1">
+            <h4 class="font-semibold text-sm sm:text-base truncate">
+              {{ request.name }}
+            </h4>
+            <div class="flex space-x-2 mt-1">
+              <button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Chấp nhận</button>
+              <button class="px-2 py-1 bg-red-500 text-white rounded text-xs">Từ chối</button>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div v-else-if="activeTab === 'search'">
+      <!-- UI Tìm kiếm -->
+      <div class="search-container mb-4">
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Tìm kiếm người dùng..."
+          class="w-full px-3 py-2 border rounded"
+        />
+      </div>
+      <ul>
+        <li
+          v-for="(user, index) in searchResults"
+          :key="index"
+          class="people-item flex items-center p-2 sm:p-3 border-b cursor-pointer hover:bg-gray-200"
+        >
+          <img
+            :src="user.avatar"
+            alt="Avatar"
+            class="avatar w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 sm:mr-3"
+          />
+          <div class="flex-1">
+            <h4 class="font-semibold text-sm sm:text-base truncate">{{ user.name }}</h4>
+            <button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Kết bạn</button>
+          </div>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
@@ -26,7 +127,33 @@ export default {
     return {
       people: [],
       updateLastActiveInterval : null,
-      isLoading: true
+      isLoading: true,
+      activeTab: 'friends',
+      friendRequests: [
+        {
+          id: 1,
+          name: 'Lê Văn A',
+          avatar: 'https://via.placeholder.com/40',
+        },
+        {
+          id: 2,
+          name: 'Trần Thị B',
+          avatar: 'https://via.placeholder.com/40',
+        },
+      ], // Danh sách yêu cầu kết bạn (mẫu)
+      searchQuery: '', // Dữ liệu input tìm kiếm
+      searchResults: [
+        {
+          id: 3,
+          name: 'Phạm Văn C',
+          avatar: 'https://via.placeholder.com/40',
+        },
+        {
+          id: 4,
+          name: 'Nguyễn Thị D',
+          avatar: 'https://via.placeholder.com/40',
+        },
+      ], // Kết quả tìm kiếm (mẫu)
     };
   },
   async mounted() {
@@ -150,6 +277,41 @@ export default {
   margin-right: 8px; /* Tạo khoảng cách giữa lastOnline và status-dot */
 }
 
+.status-dot {
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-radius: 50%;
+}
+
+.tab {
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.tab:hover {
+  background-color: #f0f0f0;
+}
+.tab.border-b-2 {
+  border-bottom: 2px solid #3b82f6;
+  font-weight: bold;
+}
+.absolute {
+  position: absolute;
+}
+.bg-red-500 {
+  background-color: #ef4444;
+}
+.people-item {
+  display: flex;
+  align-items: center;
+}
+.avatar {
+  margin-right: 8px;
+}
+.last-online {
+  margin-right: 8px;
+}
 .status-dot {
   width: 8px;
   height: 8px;

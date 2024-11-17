@@ -105,7 +105,7 @@ export default {
 
 .left-pane::-webkit-scrollbar-thumb,
 .right-pane::-webkit-scrollbar-thumb {
-  background: #b3bdce; /* Blue color (similar to icon color) */
+  background: #c7cedd; /* Blue color (similar to icon color) */
   border-radius: 10px; /* Rounded corners */
   border: 2px solid transparent; /* Optional padding effect */
   background-clip: padding-box;
@@ -114,6 +114,6 @@ export default {
 /* Hover effect for scrollbar */
 .left-pane::-webkit-scrollbar-thumb:hover,
 .right-pane::-webkit-scrollbar-thumb:hover {
-  background: #b2bbce; /* Darker blue on hover */
+  background: #c7cedd; /* Darker blue on hover */
 }
 </style>

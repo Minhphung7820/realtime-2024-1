@@ -213,4 +213,25 @@ class ChatController extends Controller
             ], 500);
         }
     }
+
+    public function seenMessage(Request $request)
+    {
+        try {
+            return DB::transaction(function () use ($request) {
+                if (isset($request['conversation_id']) && isset($request['type'])) {
+                    $userId = auth()->guard('api')->id();
+                    if ($request['type'] === 'private') {
+                        Message::where('sender_id', '!=', $userId)
+                            ->where('conversation_id', $request['conversation_id'])
+                            ->update(['seen' => 1]);
+                    }
+                }
+                return response()->json(true);
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

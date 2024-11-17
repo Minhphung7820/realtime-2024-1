@@ -75,7 +75,7 @@ export default {
     this.isLoading = false;
   },
   methods: {
-    openChat(userId, type) {
+    async openChat(userId, type) {
       if (this.$parent.dataMessage.id === userId && this.$parent.dataMessage.type === type) {
         // Nếu người dùng đang mở chính họ, không làm gì cả
         return;
@@ -83,7 +83,14 @@ export default {
        // Reset số tin nhắn chưa đọc
       const matchingConversation = this.conversations.find(convo => parseInt(convo.id) === parseInt(userId));
       if (matchingConversation) {
-        matchingConversation.unread = 0;
+        try {
+           await this.$axios.post(`/api/seen-message`,{
+            type,conversation_id : matchingConversation.conversation_id
+           });
+        } catch (error) {
+          console.error('Failed to fetch online users:', error);
+        }
+          matchingConversation.unread = 0;
       }
       //
       this.$emit('open-chat', userId, type); // Phát sự kiện open-chat lên cha

@@ -206,7 +206,7 @@ class ChatController extends Controller
                     DB::raw('false as isOnline')
                 )
                 ->orderByRaw('GREATEST(conversations.created_at, messages.created_at) DESC')
-                // ->limit(5)
+                ->limit(5)
                 ->get();
 
             // Hiển thị kết quả

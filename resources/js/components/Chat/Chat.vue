@@ -75,13 +75,12 @@ export default {
 .left-pane {
   padding-right: 1rem;
   border-right: 1px solid #e5e7eb;
-  overflow-y: auto;
 }
 
 .right-pane {
   padding-left: 1rem;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  /* overflow-y: auto; */
 }
 </style>

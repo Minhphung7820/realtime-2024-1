@@ -1,59 +1,59 @@
 <template>
+<div class="message-box flex flex-col h-full p-2 sm:p-4">
+  <!-- Header: Avatar, Tên, và Trạng thái -->
+  <div class="message-header bg-gray-100 p-2 sm:p-4 border-b flex items-center flex-shrink-0">
+    <!-- Avatar -->
+    <img
+      :src="userInfo.avatar"
+      alt="Avatar"
+      class="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3"
+    />
+    <!-- Tên và Trạng thái -->
+    <div>
+      <h3 class="text-base sm:text-lg font-bold">{{ userInfo.name }}</h3>
+      <div class="flex items-center">
+        <span
+          :class="userInfo.isOnline ? 'bg-green-500' : 'bg-gray-500'"
+          class="w-3 h-3 rounded-full mr-1"
+        ></span>
+        <span class="text-sm sm:text-base text-gray-600">
+          {{ userInfo.isOnline ? 'Đang hoạt động' : `${userInfo.lastOnlineString}` }}
+        </span>
+      </div>
+    </div>
+  </div>
   <div v-if="isLoading" class="loading-container">
-     <div class="spinner"></div>
+      <div class="spinner"></div>
   </div>
-  <div v-else class="message-box flex flex-col h-full p-2 sm:p-4">
-    <!-- Header: Avatar, Tên, và Trạng thái -->
-    <div class="message-header bg-gray-100 p-2 sm:p-4 border-b flex items-center">
-      <!-- Avatar -->
-      <img
-        :src="userInfo.avatar"
-        alt="Avatar"
-        class="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3"
-      />
-      <!-- Tên và Trạng thái -->
-      <div>
-        <h3 class="text-base sm:text-lg font-bold">{{ userInfo.name }}</h3>
-        <div class="flex items-center">
-          <span
-            :class="userInfo.isOnline ? 'bg-green-500' : 'bg-gray-500'"
-            class="w-3 h-3 rounded-full mr-1"
-          ></span>
-          <span class="text-sm sm:text-base text-gray-600">
-            {{ userInfo.isOnline ? 'Đang hoạt động' : `${userInfo.lastOnlineString}` }}
-          </span>
+  <!-- Phần tin nhắn (có cuộn) -->
+  <div v-else ref="messageContent" class="message-content flex-1 overflow-y-auto p-2">
+    <div v-for="(msg, index) in messages" :key="index" class="mb-2">
+      <div :class="msg.sender === 'me' ? 'my-message-container' : 'friend-message-container'">
+        <div :class="msg.sender === 'me' ? 'my-message' : 'friend-message'">
+          <p>{{ msg.content }}</p>
         </div>
       </div>
     </div>
-
-      <div ref="messageContent" class="message-content flex-1 overflow-y-auto p-2">
-        <div v-for="(msg, index) in messages" :key="index" class="mb-2">
-          <div :class="msg.sender === 'me' ? 'my-message-container' : 'friend-message-container'">
-            <div :class="msg.sender === 'me' ? 'my-message' : 'friend-message'">
-              <p>{{ msg.content }}</p>
-          </div>
-        </div>
-      </div>
-      <!-- Hiển thị trạng thái đang gõ -->
-      <div v-if="isFriendTyping " class="typing-indicator text-gray-500 italic mt-2">
-        Người bên kia đang gõ...
-      </div>
-    </div>
-
-    <!-- Input: Nhập và gửi tin nhắn -->
-    <div class="message-input mt-2 flex items-center">
-      <input
-        v-model="newMessage"
-        @keydown="sendTypingEvent"
-        type="text"
-        placeholder="Nhập tin nhắn..."
-        class="flex-1 p-2 sm:p-3 border rounded text-sm sm:text-base"
-      />
-      <button @click="sendMessage" class="ml-2 px-2 sm:px-4 py-1 sm:py-2 bg-blue-500 text-white rounded text-sm sm:text-base">
-        Gửi
-      </button>
-    </div>
+    <!-- Hiển thị trạng thái đang gõ -->
   </div>
+    <div v-if="isFriendTyping" class="typing-indicator text-gray-500 italic mt-2">
+      Người bên kia đang gõ...
+    </div>
+  <!-- Input: Nhập và gửi tin nhắn -->
+  <div class="message-input mt-2 flex items-center flex-shrink-0">
+    <input
+      v-model="newMessage"
+      @keydown="sendTypingEvent"
+      type="text"
+      placeholder="Nhập tin nhắn..."
+      class="flex-1 p-2 sm:p-3 border rounded text-sm sm:text-base"
+    />
+    <button @click="sendMessage" class="ml-2 px-2 sm:px-4 py-1 sm:py-2 bg-blue-500 text-white rounded text-sm sm:text-base">
+      Gửi
+    </button>
+  </div>
+</div>
+
 </template>
 
 <script>
@@ -99,6 +99,7 @@ export default {
       if (parseInt(e.conversation_id) === parseInt(this.userInfo.conversation_id)) {
          const sender = parseInt(e.sender_id) === parseInt(this.$userProfile.id) ? 'me' : 'friend';
          this.messages.unshift({sender, content : e.content});
+         this.scrollToBottom();
       }
     });
 
@@ -218,16 +219,18 @@ export default {
       }
     },
     scrollToBottom() {
-    const messageContent = this.$refs.messageContent;
+      this.$nextTick(() => {
+        const messageContent = this.$refs.messageContent;
         if (messageContent) {
           messageContent.scrollTop = messageContent.scrollHeight;
         }
+      });
     },
     async getMessage(){
         const id = this.dataMessage.id;
         const type = this.dataMessage.type;
         try {
-             const response = await this.$axios.get(`/api/get-message?id=${id}&type=${type}`);
+             const response = await this.$axios.get(`/api/get-message?id=${id}&type=${type}&limit=20`);
              this.messages = response.data.data;
              this.scrollToBottom(); // Cuộn xuống cuối cùng
         } catch (error) {
@@ -268,34 +271,46 @@ export default {
 </script>
 
 <style scoped>
-/* Chiều cao toàn bộ màn hình */
+/* Container tổng */
 .message-box {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100vh; /* Chiều cao toàn màn hình */
 }
 
+/* Phần tiêu đề (header) không cuộn */
+.message-header {
+  flex-shrink: 0; /* Không cho phép co lại khi cuộn */
+  border-bottom: 1px solid #e5e5e5;
+}
+
+/* Phần tin nhắn có cuộn */
 .message-content {
+  flex: 1; /* Chiếm phần còn lại của chiều cao */
+  overflow-y: auto; /* Cuộn dọc khi nội dung vượt quá chiều cao */
+  padding: 1rem;
+  scrollbar-width: none; /* Ẩn thanh cuộn trên Firefox */
   display: flex;
   flex-direction: column-reverse;
-  justify-content: flex-end; /* Căn nội dung xuống cuối */
-  flex: 1;
-  overflow-y: auto; /* Cho phép cuộn nếu nội dung vượt quá chiều cao */
-  padding: 1rem;
 }
 
-/* Nhập tin nhắn */
+.message-content::-webkit-scrollbar {
+  display: none; /* Ẩn thanh cuộn trên Chrome */
+}
+
+/* Phần nhập tin nhắn */
 .message-input {
-  margin-top: auto;
+  flex-shrink: 0; /* Không cho phép co lại */
+  border-top: 1px solid #e5e5e5;
 }
 
-/* Container của tin nhắn của người dùng để căn phải */
+/* Căn phải tin nhắn của tôi */
 .my-message-container {
   display: flex;
   justify-content: flex-end;
 }
 
-/* Container của tin nhắn của người khác để căn trái */
+/* Căn trái tin nhắn bạn bè */
 .friend-message-container {
   display: flex;
   justify-content: flex-start;
@@ -308,9 +323,9 @@ export default {
   border-radius: 8px;
   display: inline-block;
   max-width: 85%;
-  text-align: right;
   word-wrap: break-word;
   font-size: 0.875rem;
+  text-align: right;
 }
 
 /* Tin nhắn của bạn bè */
@@ -320,38 +335,9 @@ export default {
   border-radius: 8px;
   display: inline-block;
   max-width: 85%;
-  text-align: left;
   word-wrap: break-word;
   font-size: 0.875rem;
+  text-align: left;
 }
 
-/* Kích thước lớn hơn trên màn hình rộng */
-@media (min-width: 640px) {
-  .my-message,
-  .friend-message {
-    max-width: 70%;
-    font-size: 1rem;
-  }
-}
-
-/* Chấm trạng thái */
-.bg-green-500 {
-  background-color: #22c55e;
-}
-
-.bg-gray-500 {
-  background-color: #6b7280;
-}
-
-/* Avatar */
-.message-header img {
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-/* Hiển thị trạng thái đang gõ */
-.typing-indicator {
-  font-style: italic;
-  color: gray;
-}
 </style>

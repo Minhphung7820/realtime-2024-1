@@ -9,19 +9,19 @@
         :class="{ 'border-b-2 border-blue-500 font-bold': activeTab === 'friends' }"
         @click="activeTab = 'friends'"
       >
-        Bạn bè
+        <UsersIcon class="w-6 h-6 text-blue-500" />
       </button>
       <button
         class="tab px-4 py-2 relative"
         :class="{ 'border-b-2 border-blue-500 font-bold': activeTab === 'requests' }"
         @click="activeTab = 'requests'"
       >
-        Yêu cầu kết bạn
+        <UserPlusIcon class="w-6 h-6 text-blue-500" />
         <span
           v-if="friendRequests && friendRequests.length > 0"
           class="absolute top-0 right-0 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full"
         >
-          {{ friendRequests.length }}
+          {{ friendRequests.length > 9 ? '9+' : friendRequests.length }}
         </span>
       </button>
       <button
@@ -29,7 +29,7 @@
         :class="{ 'border-b-2 border-blue-500 font-bold': activeTab === 'search' }"
         @click="activeTab = 'search'"
       >
-        Tìm kiếm
+        <UserGroupIcon class="w-6 h-6 text-blue-500" />
       </button>
     </div>
 
@@ -121,7 +121,12 @@
 </template>
 
 <script>
+import { UserPlusIcon,UsersIcon,UserGroupIcon } from '@heroicons/vue/24/solid';
+
 export default {
+  components: {
+    UserPlusIcon,UsersIcon,UserGroupIcon
+  },
   inject: ['$axios', '$socket'],
   data() {
     return {

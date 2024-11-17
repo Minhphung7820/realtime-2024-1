@@ -19,5 +19,9 @@ Route::get('get-people', [ChatController::class, 'getPeople'])->middleware('auth
 Route::get('get-message', [ChatController::class, 'getMessage'])->middleware('auth:api');
 Route::post('save-message', [ChatController::class, 'saveMessage'])->middleware('auth:api');
 Route::post('seen-message', [ChatController::class, 'seenMessage'])->middleware('auth:api');
+Route::get('get-other-user', [ChatController::class, 'getOtherUsers'])->middleware('auth:api');
+Route::post('send-request-friend', [ChatController::class, 'sendRequestFriend'])->middleware('auth:api');
+Route::put('change-request-friend/{id}', [ChatController::class, 'changeRequestFriend'])->middleware('auth:api');
+Route::get('get-request-friend', [ChatController::class, 'getRequestFriend'])->middleware('auth:api');
 Route::get('get-list-conversation', [ChatController::class, 'listConversation'])->middleware('auth:api');
 Route::get('get-detail-conversation', [ChatController::class, 'detailConversation'])->middleware('auth:api');

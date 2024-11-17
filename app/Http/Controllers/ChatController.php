@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Conversation;
+use App\Models\ConversationParticipant;
+use App\Models\Friendship;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -227,6 +230,148 @@ class ChatController extends Controller
                     }
                 }
                 return response()->json(true);
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    function getOtherUSers(Request $request)
+    {
+        try {
+            $userId = auth()->guard('api')->id();
+
+            $users = User::query()
+                ->when(isset($request['keyword']), function ($query) use ($request) {
+                    return $query->where(function ($query) use ($request) {
+                        $query->where('name', 'LIKE', "%" . $request['keyword'] . "%");
+                        $query->orWhere('email', 'LIKE', "%" . $request['keyword'] . "%");
+                    });
+                })
+                ->where('id', '<>', $userId)
+                ->addSelect([
+                    'status_friend' => function ($query) use ($userId) {
+                        $query->select('status')
+                            ->from('friendships')
+                            ->where(function ($q) use ($userId) {
+                                $q->whereColumn('friendships.user_id', 'users.id')
+                                    ->where('friendships.friend_id', $userId)
+                                    ->orWhere(function ($q2) use ($userId) {
+                                        $q2->whereColumn('friendships.friend_id', 'users.id')
+                                            ->where('friendships.user_id', $userId);
+                                    });
+                            })
+                            ->limit(1);
+                    },
+                ])
+                ->paginate($request['limit'] ?? 5);
+
+            // Thêm giá trị mặc định "not_friend" nếu không có status
+            $users->getCollection()->transform(function ($user) {
+                $user->status_friend = $user->status_friend ?? 'not_friend';
+                return $user;
+            });
+
+            return response()->json($users);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function sendRequestFriend(Request $request)
+    {
+        try {
+            return DB::transaction(function () use ($request) {
+                if (isset($request['friend_id'])) {
+                    $userId = auth()->guard('api')->id();
+
+                    $checkExists = Friendship::where(function ($query) use ($request, $userId) {
+                        $query->where('user_id', $userId);
+                        $query->where('friend_id', $request['friend_id']);
+                    })->orWhere(function ($query) use ($request, $userId) {
+                        $query->where('friend_id', $userId);
+                        $query->where('user_id', $request['friend_id']);
+                    })->first();
+
+                    if ($checkExists) {
+                        return response()->json([
+                            'message' => ''
+                        ], 500);
+                    }
+
+                    return response()
+                        ->json(Friendship::create([
+                            'user_id' => $userId,
+                            'friend_id' => $request['friend_id'],
+                            'status' => 'pending'
+                        ]));
+                }
+                return response()->json([
+                    'message' => 'Tham số sai !'
+                ], 500);
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function changeRequestFriend(Request $request, $id)
+    {
+        try {
+            return DB::transaction(function () use ($request, $id) {
+                if (isset($request['status'])) {
+                    $requestFriend = Friendship::findOrFail($id);
+                    if ($request['status'] === 'accepted') {
+                        $conversation = Conversation::create(['name' => 'Default', 'type' => 'private']);
+                        if ($conversation) {
+                            $participants = [
+                                [
+                                    'conversation_id' => $conversation['id'],
+                                    'user_id' => $requestFriend['user_id'],
+                                    'role' => 'member',
+                                    'joined_at' => now()->format('Y-m-d H:i:s')
+                                ],
+                                [
+                                    'conversation_id' => $conversation['id'],
+                                    'user_id' => $requestFriend['friend_id'],
+                                    'role' => 'member',
+                                    'joined_at' => now()->format('Y-m-d H:i:s')
+                                ]
+                            ];
+                            ConversationParticipant::insert($participants);
+                        }
+                    }
+                    $requestFriend->status = $request['status'];
+                    $requestFriend->save();
+
+                    return $requestFriend;
+                }
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getRequestFriend(Request $request)
+    {
+        try {
+            return DB::transaction(function () use ($request) {
+                $userId = auth()->guard('api')->id();
+                return response()
+                    ->json(Friendship::where('friendships.user_id', '<>', $userId)
+                        ->join('users as user_request', 'friendships.user_id', '=', 'user_request.id')
+                        ->where('friendships.friend_id', $userId)
+                        ->where('friendships.status', 'pending')
+                        ->select('friendships.id', 'user_request.name', 'user_request.avatar')
+                        ->paginate($request['limit'] ?? 5));
             });
         } catch (\Exception $e) {
             return response()->json([

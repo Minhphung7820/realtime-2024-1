@@ -18,10 +18,10 @@
       >
         <UserPlusIcon class="w-6 h-6 text-blue-500" />
         <span
-          v-if="friendRequests && friendRequests.length > 0"
+          v-if="countRequestFriend > 0"
           class="absolute top-0 right-0 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full"
         >
-          {{ friendRequests.length > 9 ? '9+' : friendRequests.length }}
+          {{ countRequestFriend > 9 ? '9+' : countRequestFriend }}
         </span>
       </button>
       <button
@@ -84,8 +84,8 @@
               {{ request.name }}
             </h4>
             <div class="flex space-x-2 mt-1">
-              <button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Chấp nhận</button>
-              <button class="px-2 py-1 bg-red-500 text-white rounded text-xs">Từ chối</button>
+              <button @click="changeStatusRequestFriend(request.id, 'accepted')" class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Chấp nhận</button>
+              <button @click="changeStatusRequestFriend(request.id, 'blocked')" class="px-2 py-1 bg-red-500 text-white rounded text-xs">Từ chối</button>
             </div>
           </div>
         </li>
@@ -100,9 +100,13 @@
           type="text"
           placeholder="Tìm kiếm người dùng..."
           class="w-full px-3 py-2 border rounded"
+          @keyup.enter="getOtherUser"
         />
       </div>
-      <ul>
+      <div v-if="isLoading" class="loading-container">
+        <div class="spinner"></div>
+      </div>
+      <ul v-else>
         <li
           v-for="(user, index) in searchResults"
           :key="index"
@@ -115,7 +119,12 @@
           />
           <div class="flex-1">
             <h4 class="font-semibold text-sm sm:text-base truncate">{{ user.name }}</h4>
-            <button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Kết bạn</button>
+            <button v-if="user.status_friend === 'not_friend'"
+              @click="sendFriendRequest(user.id)"
+              class="px-2 py-1 bg-blue-500 text-white rounded text-xs"
+            >
+              Kết bạn
+            </button>
           </div>
         </li>
       </ul>
@@ -130,46 +139,31 @@ export default {
   components: {
     UserPlusIcon,UsersIcon,UserGroupIcon
   },
-  inject: ['$axios', '$socket'],
+  inject: ['$axios', '$socket','$userProfile'],
   data() {
     return {
       people: [],
       updateLastActiveInterval : null,
       isLoading: true,
       activeTab: 'friends',
-      friendRequests: [
-        {
-          id: 1,
-          name: 'Lê Văn A',
-          avatar: 'https://via.placeholder.com/40',
-        },
-        {
-          id: 2,
-          name: 'Trần Thị B',
-          avatar: 'https://via.placeholder.com/40',
-        },
-      ], // Danh sách yêu cầu kết bạn (mẫu)
+      friendRequests:[], // Danh sách yêu cầu kết bạn (mẫu)
       searchQuery: '', // Dữ liệu input tìm kiếm
-      searchResults: [
-        {
-          id: 3,
-          name: 'Phạm Văn C',
-          avatar: 'https://via.placeholder.com/40',
-        },
-        {
-          id: 4,
-          name: 'Nguyễn Thị D',
-          avatar: 'https://via.placeholder.com/40',
-        },
-      ], // Kết quả tìm kiếm (mẫu)
+      searchResults:[], // Kết quả tìm kiếm (mẫu)
+      countRequestFriend : 0
     };
   },
   async mounted() {
     await this.getPeople();
     await this.fetchOnlineUsers();
+    await this.getRequestFriend();
     // Lắng nghe sự kiện từ WebSocket
     this.$socket.on('user_list',this.handleUserWithStatus);
     this.$socket.on('user_disconnect_list', this.handleUserWithStatus);
+    this.$socket.on('receive_friend_request', (data) => {
+        const { sender_id, receiver_id } = data;
+        this.getRequestFriend();
+        this.countRequestFriend ++;
+    });
     // Chạy hàm cập nhật last_active mỗi giây
     this.updateLastActiveInterval = setInterval(() => {
         this.updateLastActive();
@@ -187,6 +181,57 @@ export default {
         return;
       }
       this.$emit('open-chat', userId, type); // Phát sự kiện open-chat lên cha
+    },
+    async changeStatusRequestFriend(requestId,status){
+         try {
+          await this.$axios.put(`/api/change-request-friend/${requestId}`,{
+            status
+          });
+        } catch (error) {
+          console.error('Failed to fetch online users:', error);
+        }
+    },
+    async getRequestFriend()
+    {
+        try {
+          const response = await this.$axios.get(`/api/get-request-friend`);
+          this.friendRequests = response.data.data;
+          this.countRequestFriend = response.data.total;
+        } catch (error) {
+          console.error('Failed to fetch online users:', error);
+        }
+    },
+    async sendFriendRequest(userID)
+    {
+      try {
+        this.isLoading = true;
+        await this.$axios.post(`/api/send-request-friend`, {
+             friend_id : userID
+        });
+        const data = {
+            sender_id: this.$userProfile.id,
+            receiver_id: userID,
+        };
+        this.$socket.emit('send_friend_request', data);
+        this.isLoading = false;
+      } catch (error) {
+        console.error('Failed to fetch online users:', error);
+      }
+    },
+    async getOtherUser()
+    {
+      try {
+        this.isLoading = true;
+        const response = await this.$axios.get(`/api/get-other-user`, {
+          params: {
+            keyword: this.searchQuery
+          }
+        });
+        this.searchResults = response.data.data;
+        this.isLoading = false;
+      } catch (error) {
+        console.error('Failed to fetch online users:', error);
+      }
     },
     async fetchOnlineUsers() {
         try {

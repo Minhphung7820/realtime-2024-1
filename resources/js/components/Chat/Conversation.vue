@@ -153,13 +153,6 @@ export default {
        // Reset số tin nhắn chưa đọc
       const matchingConversation = this.conversations.find(convo => parseInt(convo.id) === parseInt(userId));
       if (matchingConversation) {
-        try {
-           await this.$axios.post(`/api/seen-message`,{
-            type,conversation_id : matchingConversation.conversation_id
-           });
-        } catch (error) {
-          console.error('Failed to fetch online users:', error);
-        }
           matchingConversation.unread = 0;
       }
       //

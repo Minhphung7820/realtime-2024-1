@@ -46,22 +46,24 @@
           class="people-item flex items-center p-2 sm:p-3 border-b cursor-pointer hover:bg-gray-200"
           @click="openChat(person.id, 'private')"
         >
-          <img :src="person.avatar" alt="Avatar" class="avatar w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 sm:mr-3" />
-          <div class="flex-1 max-w-xs">
-            <div class="flex justify-between items-center w-full">
-              <h4 class="font-semibold text-sm sm:text-base truncate">{{ person.name }}</h4>
-              <span
-                v-if="!person.isOnline"
-                class="text-xs text-gray-400 last-online"
-              >
-                {{ person.last_active_string }}
-              </span>
-            </div>
+          <!-- Avatar and status dot container -->
+          <div class="relative mr-3">
+            <!-- Avatar -->
+            <img :src="person.avatar" alt="Avatar" class="avatar w-10 h-10 sm:w-12 sm:h-12 rounded-full" />
+            <!-- Trạng thái online/offline -->
+            <span
+              :class="person.isOnline ? 'bg-green-500' : 'bg-gray-400'"
+              class="w-3 h-3 rounded-full absolute bottom-0 right-0 border-2 border-white"
+            ></span>
           </div>
-          <span
-            :class="person.isOnline ? 'bg-green-500' : 'bg-gray-400'"
-            class="status-dot"
-          ></span>
+
+          <!-- Nội dung -->
+          <div class="flex-1">
+            <h4 class="font-semibold text-sm sm:text-base truncate">{{ person.name }}</h4>
+            <p class="text-xs text-gray-400 mt-1 truncate">
+              {{ !person.isOnline ? person.last_active_string : '' }}
+            </p>
+          </div>
         </li>
       </ul>
     </div>
@@ -371,55 +373,137 @@ export default {
 .people-item {
   display: flex;
   align-items: center;
-}
-
-.avatar {
-  margin-right: 8px;
-}
-
-.last-online {
-  margin-right: 8px; /* Tạo khoảng cách giữa lastOnline và status-dot */
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  margin-left: auto;
-  border-radius: 50%;
-}
-
-.tab {
-  padding: 8px 16px;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #e5e7eb; /* Màu viền */
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease;
 }
-.tab:hover {
-  background-color: #f0f0f0;
+
+.people-item:hover {
+  background-color: #f3f4f6; /* Màu nền khi hover */
 }
-.tab.border-b-2 {
-  border-bottom: 2px solid #3b82f6;
-  font-weight: bold;
-}
-.absolute {
-  position: absolute;
-}
-.bg-red-500 {
-  background-color: #ef4444;
-}
-.people-item {
-  display: flex;
-  align-items: center;
-}
+
 .avatar {
-  margin-right: 8px;
+  width: 40px; /* Kích thước avatar */
+  height: 40px;
+  border-radius: 50%; /* Bo tròn */
+  object-fit: cover; /* Đảm bảo hình ảnh không bị méo */
 }
-.last-online {
-  margin-right: 8px;
+
+.relative {
+  position: relative; /* Để sử dụng absolute bên trong */
 }
-.status-dot {
-  width: 8px;
-  height: 8px;
-  margin-left: auto;
+
+.absolute {
+  position: absolute; /* Đặt vị trí tuyệt đối */
+}
+
+.bottom-0 {
+  bottom: 0; /* Dính đáy */
+}
+
+.right-0 {
+  right: 0; /* Dính phải */
+}
+
+.flex-1 {
+  flex: 1; /* Tận dụng không gian còn lại */
+}
+
+.text-gray-400 {
+  color: #9ca3af; /* Màu xám cho text */
+}
+
+.text-xs {
+  font-size: 0.75rem; /* Kích thước chữ nhỏ */
+}
+
+.mt-1 {
+  margin-top: 0.25rem; /* Khoảng cách giữa các phần */
+}
+
+.font-semibold {
+  font-weight: 600; /* Đậm vừa */
+}
+
+.text-sm {
+  font-size: 0.875rem; /* Cỡ chữ nhỏ */
+}
+
+.text-base {
+  font-size: 1rem; /* Cỡ chữ cơ bản */
+}
+
+.truncate {
+  overflow: hidden; /* Ẩn phần text thừa */
+  text-overflow: ellipsis; /* Thêm dấu "..." khi text quá dài */
+  white-space: nowrap; /* Không xuống dòng */
+}
+
+.border-b {
+  border-bottom-width: 1px;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.hover\:bg-gray-200:hover {
+  background-color: #e5e7eb;
+}
+
+.p-2 {
+  padding: 0.5rem; /* Khoảng cách padding */
+}
+
+.p-3 {
+  padding: 0.75rem;
+}
+
+.sm\:p-3 {
+  padding: 0.75rem;
+}
+
+.bg-gray-50 {
+  background-color: #f9fafb; /* Nền xám nhạt */
+}
+
+.bg-green-500 {
+  background-color: #22c55e; /* Màu xanh trạng thái online */
+}
+
+.bg-gray-400 {
+  background-color: #9ca3af; /* Màu xám trạng thái offline */
+}
+
+.rounded-full {
+  border-radius: 9999px; /* Bo tròn hoàn toàn */
+}
+
+.transition {
+  transition: all 0.3s ease; /* Hiệu ứng mượt khi hover */
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.spinner {
+  border: 4px solid #f3f4f6; /* Màu viền nhạt */
+  border-top: 4px solid #3b82f6; /* Màu xanh quay */
   border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite; /* Hiệu ứng quay */
 }
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 </style>

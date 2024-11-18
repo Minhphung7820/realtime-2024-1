@@ -88,7 +88,7 @@ export default {
   },
   async mounted(){
      this.socket = this.$socket;
-     await this.getConversation();
+     await this.findConversation();
      await this.getStatusUserOnline();
      await this.getMessage();
      this.socket.on('user_list',this.handleUserWithStatusFromSocket);
@@ -150,7 +150,7 @@ export default {
             conversation_id : null
           };
           this.socket = this.$socket;
-          await this.getConversation();
+          await this.findConversation();
           await this.getStatusUserOnline();
           await this.getMessage();
           this.socket.emit('join_conversation', this.userInfo.conversation_id);
@@ -160,7 +160,7 @@ export default {
     },
   },
   methods: {
-    async getConversation()
+    async findConversation()
     {
       const id = this.dataMessage.id;
       const type = this.dataMessage.type;

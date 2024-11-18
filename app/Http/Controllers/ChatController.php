@@ -199,6 +199,7 @@ class ChatController extends Controller
                     'ucp2.avatar',
                     'ucp2.last_active',
                     'conversations.type',
+                    DB::raw("CASE WHEN messages.sender_id = $userId THEN 'me' ELSE 'friend' END as sender"),
                     'conversations.id as conversation_id',
                     'messages.content as lastMessage',
                     'messages.created_at as sent_at',

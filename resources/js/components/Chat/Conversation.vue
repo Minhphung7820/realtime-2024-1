@@ -42,7 +42,7 @@
                 Bắt đầu trò chuyện nào!
               </span>
               <span v-else>
-                {{ conversation.lastMessage }}
+                <strong v-if="conversation.sender === 'me'">Bạn:</strong>  {{ conversation.lastMessage }}
               </span>
             </p>
           </div>
@@ -100,18 +100,22 @@ export default {
     this.socket.on('receive_message', (e) => {
 
       const matchingConversation = this.conversations.find(convo => parseInt(convo.conversation_id) === parseInt(e.conversation_id));
-
-      if (matchingConversation && parseInt(e.sender_id) !== parseInt(this.$userProfile.id)) {
-        if (this.$parent.dataMessage.id !== parseInt(e.conversation_id)) {
-          // Nếu cuộc trò chuyện không được mở, tăng số lượng tin nhắn chưa đọc
-          matchingConversation.lastMessage = e.content;
-          matchingConversation.unread = (matchingConversation.unread || 0) + 1;
-          this.moveConvToTop({id:e.conversation_id});
-        } else {
-          // Nếu cuộc trò chuyện đang được mở, có thể xử lý tin nhắn ngay tại đây
-          console.log("Tin nhắn mới trong cuộc trò chuyện đang mở:", e.content);
-        }
-      }
+         if(matchingConversation){
+            if (parseInt(e.sender_id) !== parseInt(this.$userProfile.id)) {
+              if (this.$parent.dataMessage.id !== parseInt(e.conversation_id)) {
+                // Nếu cuộc trò chuyện không được mở, tăng số lượng tin nhắn chưa đọc
+                matchingConversation.lastMessage = e.content;
+                matchingConversation.unread = (matchingConversation.unread || 0) + 1;
+                matchingConversation.sender = 'friend';
+                this.moveConvToTop({id:e.conversation_id});
+              } else {
+                // Nếu cuộc trò chuyện đang được mở, có thể xử lý tin nhắn ngay tại đây
+                console.log("Tin nhắn mới trong cuộc trò chuyện đang mở:", e.content);
+              }
+            }else{
+                matchingConversation.sender = 'me';
+            }
+         }
     });
    //
     this.isLoading = false;

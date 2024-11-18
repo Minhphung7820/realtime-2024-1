@@ -33,9 +33,28 @@
           <p>{{ msg.content }}</p>
         </div>
       </div>
+
+      <!-- Hiển thị danh sách avatar sau tin nhắn cuối cùng của bạn -->
+      <div v-if="msg.sender === 'me' && index === 0" class="seen-avatars flex items-center mt-1">
+        <div
+          v-for="(viewer, i) in viewers.slice(0, 5)"
+          :key="viewer.id"
+          class="w-6 h-6 rounded-full overflow-hidden border-2 border-white -ml-2"
+          :style="{ zIndex: viewers.length - i }"
+        >
+          <img
+            :src="viewer.avatar"
+            alt="viewer avatar"
+            class="w-full h-full object-cover"
+          />
+        </div>
+        <div v-if="viewers.length > 5" class="extra-viewers text-sm text-gray-600 ml-2">
+          +{{ viewers.length - 5 }}
+        </div>
+      </div>
     </div>
-    <!-- Hiển thị trạng thái đang gõ -->
   </div>
+
   <div v-if="isFriendTyping" class="typing-indicator text-gray-500 italic mt-2">
       Người bên kia đang gõ...
   </div>
@@ -66,8 +85,49 @@ export default {
       }
   },
   data() {
-
     return {
+         viewers: [
+      {
+        id: 1,
+        name: 'John Doe',
+        avatar: 'https://i.pravatar.cc/50?img=1' // URL mẫu cho avatar
+      },
+      {
+        id: 2,
+        name: 'Jane Smith',
+        avatar: 'https://i.pravatar.cc/50?img=2'
+      },
+      {
+        id: 3,
+        name: 'Alice Johnson',
+        avatar: 'https://i.pravatar.cc/50?img=3'
+      },
+      {
+        id: 4,
+        name: 'Robert Brown',
+        avatar: 'https://i.pravatar.cc/50?img=4'
+      },
+      {
+        id: 5,
+        name: 'Emily Davis',
+        avatar: 'https://i.pravatar.cc/50?img=5'
+      },
+      {
+        id: 6,
+        name: 'William Wilson',
+        avatar: 'https://i.pravatar.cc/50?img=6'
+      },
+      {
+        id: 7,
+        name: 'Olivia Taylor',
+        avatar: 'https://i.pravatar.cc/50?img=7'
+      },
+      {
+        id: 8,
+        name: 'Liam Martinez',
+        avatar: 'https://i.pravatar.cc/50?img=8'
+      }
+    ],
       userInfo: {
         id : null,
         name: '', // Tên người dùng
@@ -367,4 +427,18 @@ export default {
   text-align: left;
 }
 
+.seen-avatars img {
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px white;
+}
+
+.seen-avatars .extra-viewers {
+  margin-left: 4px;
+  font-weight: bold;
+  color: #666;
+}
+
+.message-content .seen-avatars {
+  margin-top: 8px; /* Khoảng cách giữa tin nhắn và danh sách avatar */
+}
 </style>

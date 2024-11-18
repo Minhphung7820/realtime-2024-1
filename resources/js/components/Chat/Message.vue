@@ -427,6 +427,13 @@ export default {
   text-align: left;
 }
 
+.seen-avatars {
+  margin-top: 8px; /* Khoảng cách giữa tin nhắn và danh sách avatar */
+  display: flex;
+  justify-content: flex-end; /* Căn sang phải */
+  align-items: center; /* Căn giữa theo chiều dọc */
+}
+
 .seen-avatars img {
   border-radius: 50%;
   box-shadow: 0 0 0 2px white;

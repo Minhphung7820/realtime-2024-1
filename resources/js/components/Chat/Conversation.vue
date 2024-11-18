@@ -1,29 +1,42 @@
 <template>
   <div>
     <h3 class="font-bold text-lg mb-2">Cuộc trò chuyện</h3>
-    <transition-group
-      name="smooth-move"
-      tag="ul"
-      class="conversation-list"
-    >
-      <li
-        v-for="(conversation, index) in conversations"
-        :key="conversation.conversation_id"
-        class="conversation-item flex items-center p-3 border-b cursor-pointer hover:bg-gray-200"
-        @click="openChat(conversation.id, 'private')"
+    <div v-if="conversations.length">
+      <transition-group
+        name="smooth-move"
+        tag="ul"
+        class="conversation-list"
       >
-        <!-- Avatar -->
-        <img :src="conversation.avatar" alt="Avatar" class="w-10 h-10 rounded-full mr-3" />
+        <li
+          v-for="(conversation, index) in conversations"
+          :key="conversation.conversation_id"
+          class="conversation-item flex items-center p-3 border-b cursor-pointer hover:bg-gray-200"
+          @click="openChat(conversation.id, 'private')"
+        >
+          <!-- Avatar and status dot container -->
+          <div class="relative mr-3">
+            <!-- Avatar -->
+            <img :src="conversation.avatar" alt="Avatar" class="w-10 h-10 rounded-full" />
 
-        <!-- Nội dung trò chuyện -->
-        <div class="flex-1">
-          <div class="flex justify-between items-center">
-            <h4 class="font-semibold">{{ conversation.name }}</h4>
-            <!-- Hiển thị số tin nhắn chưa đọc -->
-            <span v-if="conversation.unread > 0" class="unread-count text-xs text-white bg-red-500 rounded-full px-2 py-0.5">
-              {{ conversation.unread > 5 ? '5+' : conversation.unread }}
-            </span>
+            <!-- Trạng thái online/offline -->
+            <span
+              :class="conversation.isOnline ? 'bg-green-500' : 'bg-gray-400'"
+              class="w-3 h-3 rounded-full absolute bottom-0 right-0 border-2 border-white"
+            ></span>
           </div>
+
+          <!-- Nội dung trò chuyện -->
+          <div class="flex-1">
+            <div class="flex justify-between items-center">
+              <h4 class="font-semibold">{{ conversation.name }}</h4>
+              <!-- Hiển thị số tin nhắn chưa đọc -->
+              <span
+                v-if="conversation.unread > 0"
+                class="unread-count text-xs text-white bg-red-500 rounded-full px-2 py-0.5"
+              >
+                {{ conversation.unread > 5 ? '5+' : conversation.unread }}
+              </span>
+            </div>
             <p class="text-gray-500 text-sm truncate">
               <span v-if="!conversation.lastMessage" class="font-bold">
                 Bắt đầu trò chuyện nào!
@@ -32,12 +45,13 @@
                 {{ conversation.lastMessage }}
               </span>
             </p>
-        </div>
-
-        <!-- Trạng thái online/offline -->
-        <span :class="conversation.isOnline ? 'bg-green-500' : 'bg-gray-400'" class="status-dot w-3 h-3 rounded-full ml-3"></span>
-      </li>
-    </transition-group>
+          </div>
+        </li>
+      </transition-group>
+    </div>
+    <div v-else class="text-center text-gray-500 py-4">
+      Chưa có cuộc trò chuyện nào
+    </div>
   </div>
 </template>
 
@@ -195,16 +209,18 @@ export default {
 .smooth-move-move {
   transition: transform 0.5s ease-in-out;
 }
+
 .conversation-item {
   display: flex;
   align-items: center;
 }
 
-.status-dot {
+/* Loại bỏ lớp .status-dot nếu không cần thiết */
+/* .status-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-}
+} */
 
 .unread-count {
   background-color: red;

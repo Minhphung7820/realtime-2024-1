@@ -184,8 +184,7 @@ export default {
     };
   },
   async mounted() {
-    await this.getPeople();
-    await this.setStatusUserOnline();
+    await this.fetchPeopleWithStatus();
     await this.getRequestFriend();
     // Lắng nghe sự kiện từ WebSocket
     this.$socket.on('user_list',this.handleUserWithStatus);
@@ -195,6 +194,12 @@ export default {
         this.getRequestFriend();
         this.countRequestFriend ++;
     });
+
+    this.$socket.on(`receive_noti_change_friend_request`, (e) => {
+      if (e.status === 'accepted') {
+        this.fetchPeopleWithStatus();
+      }
+  });
     // Chạy hàm cập nhật last_active mỗi giây
     this.updateLastActiveInterval = setInterval(() => {
         this.updateLastActive();
@@ -206,6 +211,41 @@ export default {
     clearInterval(this.updateLastActiveInterval);
   },
   methods: {
+    async fetchPeopleWithStatus() {
+      try {
+        // Gọi API để lấy danh sách người dùng
+        const limitPeople = 10;
+        const peopleResponse = await this.$axios.get(`/api/get-people?limit=${limitPeople}`);
+        const onlineUsersResponse = await this.$axios.get('http://localhost:6060/api/online-users');
+        const onlineUsers = onlineUsersResponse.data.data;
+        // Chỉ xử lý last_active_string cho 10 người đầu tiên
+        const firstTenPeople = peopleResponse.data.data.slice(0, 10).map(person => {
+        const isOnlineUser = onlineUsers.find(user => parseInt(user.userID) === parseInt(person.id));
+          return {
+            ...person,
+            isOnline: !!isOnlineUser, // Kiểm tra nếu có trong danh sách online
+            last_active_string: person.last_active
+              ? this.formatTimeDifference(person.last_active)
+              : null,
+          };
+        });
+
+        // Các người dùng còn lại không có last_active_string
+        const remainingPeople = peopleResponse.data.data.slice(10).map(person => {
+          const isOnlineUser = onlineUsers.find(user => user.userID === person.id);
+          return {
+            ...person,
+            isOnline: !!isOnlineUser, // Kiểm tra nếu có trong danh sách online
+            last_active_string: null, // Không có giá trị
+          };
+        });
+
+        // Kết hợp danh sách
+        this.people = [...firstTenPeople, ...remainingPeople];
+      } catch (error) {
+        console.error('Failed to fetch people or online users:', error);
+      }
+    },
     openChat(userId, type) {
       if (this.$parent.dataMessage.id === userId && this.$parent.dataMessage.type === type) {
         // Nếu người dùng đang mở chính họ, không làm gì cả
@@ -215,14 +255,24 @@ export default {
     },
     async changeStatusRequestFriend(requestId,status){
          try {
-          await this.$axios.put(`/api/change-request-friend/${requestId}`,{
+         const responese =  await this.$axios.put(`/api/change-request-friend/${requestId}`,{
             status
           });
           this.friendRequests = this.friendRequests.filter(request => request.id !== requestId);
 
           this.countRequestFriend = this.friendRequests.length;
-          await this.getPeople();
-          await this.setStatusUserOnline();
+         await this.fetchPeopleWithStatus();
+
+          this.$socket.emit(`noti_change_friend_request`,{
+            sender_id:this.$userProfile.id,
+            receiver_id:responese.data.user_id,
+            status:status,
+            conversation_id:responese.data.conversation_id
+          });
+
+          if(status === 'accepted'){
+              this.$emit('move-conv-to-top' , {id:responese.data.conversation_id,content : null});
+          }
         } catch (error) {
           console.error('Failed to fetch online users:', error);
         }
@@ -270,44 +320,6 @@ export default {
         this.isLoading = false;
       } catch (error) {
         console.error('Failed to fetch online users:', error);
-      }
-    },
-    async setStatusUserOnline() {
-        try {
-          const response = await this.$axios.get('http://localhost:6060/api/online-users');
-          const onlineUsers = response.data.data;
-
-          // Cập nhật trạng thái online vào mảng people
-          onlineUsers.forEach(user => {
-            const matchingPerson = this.people.find(person => person.id === parseInt(user.userID));
-            if (matchingPerson) {
-              matchingPerson.isOnline = user.isOnline;
-            }
-          });
-        } catch (error) {
-          console.error('Failed to fetch online users:', error);
-        }
-    },
-    async getPeople() {
-      try {
-        let limitPeople = 10;
-        const getPeople = await this.$axios.get(`/api/get-people?limit=${limitPeople}`);
-
-        const firstTenPeople = getPeople.data.data.slice(0, 10).map(person => ({
-          ...person,
-          isOnline: false, // Mặc định offline
-          last_active_string:person.last_active ? this.formatTimeDifference(person.last_active) : null
-        }));
-
-        const remainingPeople = getPeople.data.data.slice(10).map(person => ({
-          ...person,
-          isOnline: false,
-          last_active_string: null // Không áp dụng format cho các phần tử sau
-        }));
-
-      this.people = [...firstTenPeople, ...remainingPeople];
-      } catch (error) {
-        console.log('Failed get data:', error);
       }
     },
     handleUserWithStatus(user) {

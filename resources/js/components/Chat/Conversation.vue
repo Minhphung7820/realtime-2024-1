@@ -69,13 +69,19 @@ export default {
   {
     this.socket = this.$socket;
     await this.getConversations();
-    await this.fetchOnlineUsers();
     this.socket.on('user_list',this.handleUserWithStatus);
     this.socket.on('user_disconnect_list', this.handleUserWithStatus);
    //
    this.conversations.forEach((convo) => {
       this.socket.emit('join_conversation', convo.conversation_id); // Join tất cả các phòng của user
    });
+
+  this.socket.on(`receive_noti_change_friend_request`, (e) => {
+    if (e.status === 'accepted') {
+         this.getConversations();
+         this.socket.emit('join_conversation', e.conversation_id);
+    }
+  });
    //
     this.socket.on('receive_message', (e) => {
 
@@ -97,23 +103,26 @@ export default {
     this.isLoading = false;
   },
   methods: {
-    moveConvToTop(objectConv) {
+    async moveConvToTop(objectConv) {
       if (Object.keys(objectConv).length > 0) {
-        // Tìm vị trí của cuộc trò chuyện
+        // Kiểm tra xem conversation đã tồn tại hay chưa
         const conversationIndex = this.conversations.findIndex(
           (convo) => parseInt(convo.conversation_id) === parseInt(objectConv.id)
         );
 
         if (conversationIndex !== -1) {
-          // Gắn content của cuộc trò chuyện thành objectConv.content
-          if(objectConv.content){
+          // Nếu đã tồn tại, di chuyển cuộc trò chuyện lên đầu
+          if (objectConv.content) {
             this.conversations[conversationIndex].lastMessage = objectConv.content;
           }
-          // Di chuyển cuộc trò chuyện lên đầu
           const [movedConversation] = this.conversations.splice(conversationIndex, 1);
           this.conversations.unshift(movedConversation);
 
           // Đảm bảo reactivity để Vue trigger lại hiệu ứng
+          this.conversations = [...this.conversations];
+        }else{
+          await this.getConversations();
+          this.socket.emit('join_conversation', objectConv.id);
           this.conversations = [...this.conversations];
         }
       }
@@ -138,32 +147,27 @@ export default {
       //
       this.$emit('open-chat', userId, type); // Phát sự kiện open-chat lên cha
     },
-    async fetchOnlineUsers() {
-        try {
-          const response = await this.$axios.get('http://localhost:6060/api/online-users');
-          const onlineUsers = response.data.data;
+    async getConversations() {
+      try {
+        // Lấy danh sách các cuộc trò chuyện
+        const conversationResponse = await this.$axios.get(`/api/get-list-conversation`);
+        this.conversations = conversationResponse.data;
 
-          // Cập nhật trạng thái online vào mảng people
-          onlineUsers.forEach(user => {
-            const matchingPerson = this.conversations.find(person => person.id === parseInt(user.userID)
-            && person.type ==='private');
-            if (matchingPerson) {
-              matchingPerson.isOnline = user.isOnline;
-            }
-          });
-        } catch (error) {
-          console.error('Failed to fetch online users:', error);
-        }
-    },
-    async getConversations()
-    {
-       try {
-         const response = await this.$axios.get(`/api/get-list-conversation`);
-         this.conversations = response.data;
-       } catch (error) {
-        console.log("GET DATA FAILED WITH ERROR : ",error);
+        // Lấy danh sách người dùng online
+        const onlineUsersResponse = await this.$axios.get('http://localhost:6060/api/online-users');
+        const onlineUsers = onlineUsersResponse.data.data;
 
-       }
+        // Cập nhật trạng thái online vào mảng conversations
+        onlineUsers.forEach(user => {
+          const matchingPerson = this.conversations.find(person => person.id === parseInt(user.userID)
+          && person.type === 'private');
+          if (matchingPerson) {
+            matchingPerson.isOnline = user.isOnline;
+          }
+        });
+      } catch (error) {
+        console.error('Failed to fetch conversations and users:', error);
+      }
     },
     handleUserWithStatus(user) {
       const matchingPerson = this.conversations.find(person => person.id === parseInt(user.userID)

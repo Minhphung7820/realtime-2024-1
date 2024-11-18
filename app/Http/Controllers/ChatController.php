@@ -327,19 +327,23 @@ class ChatController extends Controller
         try {
             return DB::transaction(function () use ($request, $id) {
                 if (isset($request['status'])) {
-                    $requestFriend = Friendship::findOrFail($id);
+                    $requestFriend = Friendship::with('user:id,name,avatar', 'friend:id,name,avatar')->findOrFail($id);
+
+                    $conversationId = null; // Biến lưu trữ conversation_id
+
                     if ($request['status'] === 'accepted') {
                         $conversation = Conversation::create(['name' => 'Default', 'type' => 'private']);
                         if ($conversation) {
+                            $conversationId = $conversation['id']; // Lưu conversation_id
                             $participants = [
                                 [
-                                    'conversation_id' => $conversation['id'],
+                                    'conversation_id' => $conversationId,
                                     'user_id' => $requestFriend['user_id'],
                                     'role' => 'member',
                                     'joined_at' => now()->format('Y-m-d H:i:s')
                                 ],
                                 [
-                                    'conversation_id' => $conversation['id'],
+                                    'conversation_id' => $conversationId,
                                     'user_id' => $requestFriend['friend_id'],
                                     'role' => 'member',
                                     'joined_at' => now()->format('Y-m-d H:i:s')
@@ -350,9 +354,13 @@ class ChatController extends Controller
                         $requestFriend->status = $request['status'];
                         $requestFriend->save();
                     }
+
                     if ($request['status'] === 'blocked') {
                         $requestFriend->delete();
                     }
+                    // Gán thêm conversation_id vào response
+                    $requestFriend->conversation_id = $conversationId;
+
                     return $requestFriend;
                 }
             });

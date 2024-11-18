@@ -13,7 +13,8 @@ class ConversationParticipant extends Model
     'conversation_id',
     'user_id',
     'role',
-    'joined_at'
+    'joined_at',
+    'remove_at'
   ];
 
   public function conversation()

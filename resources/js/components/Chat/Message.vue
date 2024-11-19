@@ -120,11 +120,13 @@ export default {
      this.socket.on('user_disconnect_list', this.handleUserWithStatusFromSocket);
      this.socket.emit('join_conversation', this.userInfo.conversation_id);
 
-    this.socket.on('receive_message', (e) => {
+    this.socket.on('receive_message', async (e) => {
       if (parseInt(e.conversation_id) === parseInt(this.userInfo.conversation_id)) {
-         const sender = parseInt(e.sender_id) === parseInt(this.$userProfile.id) ? 'me' : 'friend';
-         this.messages.unshift({sender, content : e.content});
-         this.scrollToBottom();
+        const sender = parseInt(e.sender_id) === parseInt(this.$userProfile.id) ? 'me' : 'friend';
+        this.messages.unshift({ sender, content: e.content,sender_id:e.sender_id });
+
+        // Cuộn xuống cuối và tự động kích hoạt trigger nếu cần
+        await this.scrollToBottom();
       }
     });
 
@@ -144,7 +146,8 @@ export default {
 
     const messageContent = this.$refs.messageContent;
     if (messageContent) {
-      messageContent.addEventListener('scroll', this.handleScroll);
+
+      messageContent.addEventListener('scroll', this.triggerSeenScrollMessage);
     }
 
     this.socket.on(`seen_message`,(e) =>{
@@ -162,6 +165,7 @@ export default {
         this.updateLastActiveFriendConversation();
     }, 1000);
     this.isLoading = false;
+    this.triggerSeenScrollMessage();
   },
   beforeUnmount() {
     // Dừng interval khi component bị hủy
@@ -202,7 +206,7 @@ export default {
     },
   },
   methods: {
-    handleScroll() {
+    triggerSeenScrollMessage() {
       const messageContent = this.$refs.messageContent;
       if (!messageContent) return;
 
@@ -281,13 +285,14 @@ export default {
         return `${months} tháng trước`;
       }
     },
-    scrollToBottom() {
-      this.$nextTick(() => {
-        const messageContent = this.$refs.messageContent;
-        if (messageContent) {
-          messageContent.scrollTop = messageContent.scrollHeight;
-        }
-      });
+    async scrollToBottom() {
+      const messageContent = this.$refs.messageContent;
+      if (messageContent) {
+        // Lưu trạng thái cuộn trước khi thay đổi
+        await this.$nextTick(); // Đợi DOM được cập nhật
+        messageContent.scrollTop = 0; // Cuộn xuống cuối (với flex-direction: column-reverse)
+        this.triggerSeenScrollMessage();
+      }
     },
     async getMessage(){
         const id = this.dataMessage.id;

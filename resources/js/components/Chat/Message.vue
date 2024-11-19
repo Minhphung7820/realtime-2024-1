@@ -144,15 +144,14 @@ export default {
       }
     });
 
-    const messageContent = this.$refs.messageContent;
-    if (messageContent) {
-
-      messageContent.addEventListener('scroll', this.triggerSeenScrollMessage);
+    if (this.$refs.messageContent) {
+      const messageContent = this.$refs.messageContent;
+      messageContent.addEventListener('scroll', this.scrollToBottomWithTrigger);
     }
 
     this.socket.on(`seen_message`,(e) =>{
          const isSeen = this.viewers.some(viewer => parseInt(viewer.id) === parseInt(e.viewer_id));
-         if(!isSeen){
+         if(!isSeen && parseInt(e.conversation_id) === parseInt(this.userInfo.conversation_id)){
             this.viewers.push({
               id: e.viewer_id,
               name: e.name,
@@ -160,12 +159,11 @@ export default {
             });
          }
     });
-
+    //
     this.updateLastActiveFriendInterval = setInterval(() => {
         this.updateLastActiveFriendConversation();
     }, 1000);
     this.isLoading = false;
-    this.triggerSeenScrollMessage();
   },
   beforeUnmount() {
     // Dừng interval khi component bị hủy
@@ -186,6 +184,7 @@ export default {
           }
           this.isLoading = true;
           this.messages = [];
+          this.viewers = [];
           this.userInfo = {
             id: null,
             name: '',
@@ -201,12 +200,13 @@ export default {
           await this.getMessage();
           this.socket.emit('join_conversation', this.userInfo.conversation_id);
           this.isLoading = false;
+          this.scrollToBottom();
         }
       },
     },
   },
   methods: {
-    triggerSeenScrollMessage() {
+    scrollToBottomWithTrigger() {
       const messageContent = this.$refs.messageContent;
       if (!messageContent) return;
 
@@ -218,16 +218,21 @@ export default {
         const latestMessage = this.messages[0];
 
         if(latestMessage && parseInt(latestMessage.sender_id) !== parseInt(this.$userProfile.id)){
-
-            this.socket.emit('seen_message', {
-              viewer_id : this.$userProfile.id,
-              conversation_id: this.userInfo.conversation_id,
-              name : this.$userProfile.name,
-              avatar: this.$userProfile.avatar,
-              sender_id : latestMessage.sender_id
-            });
+          this.triggerSeenMessage(latestMessage);
         }
       }
+    },
+    triggerSeenMessage(latestMessage)
+    {
+      console.log(latestMessage.sender_id);
+
+      this.socket.emit('seen_message', {
+          viewer_id : this.$userProfile.id,
+          conversation_id: this.userInfo.conversation_id,
+          name : this.$userProfile.name,
+          avatar: this.$userProfile.avatar,
+          sender_id : latestMessage.sender_id
+      });
     },
     async findConversation()
     {
@@ -286,12 +291,13 @@ export default {
       }
     },
     async scrollToBottom() {
+      await this.$nextTick(); // Đảm bảo DOM đã được render trước khi thực hiện
       const messageContent = this.$refs.messageContent;
       if (messageContent) {
-        // Lưu trạng thái cuộn trước khi thay đổi
-        await this.$nextTick(); // Đợi DOM được cập nhật
-        messageContent.scrollTop = 0; // Cuộn xuống cuối (với flex-direction: column-reverse)
-        this.triggerSeenScrollMessage();
+        messageContent.scrollTop = 0; // Cuộn xuống cuối
+        this.scrollToBottomWithTrigger();
+      } else {
+        console.warn('messageContent is not available yet.');
       }
     },
     async getMessage(){
@@ -318,6 +324,7 @@ export default {
                sender_id : this.$userProfile.id,
                content: this.newMessage
              });
+             this.viewers = [];
              this.$emit('move-conv-to-top' , {id:this.userInfo.conversation_id,content : this.newMessage});
         this.newMessage = '';
          } catch (error) {

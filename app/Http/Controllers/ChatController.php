@@ -7,6 +7,7 @@ use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\Friendship;
 use App\Models\Message;
+use App\Models\SeenMessage;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -223,13 +224,9 @@ class ChatController extends Controller
     {
         try {
             return DB::transaction(function () use ($request) {
-                if (isset($request['conversation_id']) && isset($request['type'])) {
+                if (isset($request['conversation_id'])) {
                     $userId = auth()->guard('api')->id();
-                    if ($request['type'] === 'private') {
-                        Message::where('sender_id', '!=', $userId)
-                            ->where('conversation_id', $request['conversation_id'])
-                            ->update(['seen' => 1]);
-                    }
+                    SeenMessage::updateOrCreate(['user_id' => $userId, 'message_id' => $request['message_id']], ['user_id' => $userId, 'message_id' => $request['message_id'], 'conversation_id' => $request['conversation_id'], 'seen_at' => now()->format('Y-m-d H:i:s')]);
                 }
                 return response()->json(true);
             });

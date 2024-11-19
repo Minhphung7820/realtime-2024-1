@@ -35,3 +35,11 @@ export function formatTimeDifference(lastActive) {
     return `${months} tháng trước`;
   }
 }
+
+export function debounce(func, wait) {
+  let timeout;
+  return function (...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}

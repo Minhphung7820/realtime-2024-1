@@ -76,6 +76,8 @@
 </template>
 
 <script>
+import {formatTimeDifference} from '../../utils/functions.js';
+
 export default {
   inject: ['$axios','$userProfile','$socket'],
   props:{
@@ -245,7 +247,7 @@ export default {
         this.userInfo.name = response.data.name;
         this.userInfo.lastOnline = response.data.last_active;
         this.userInfo.conversation_id = response.data.conversation_id;
-        this.userInfo.lastOnlineString = this.formatTimeDifference(response.data.last_active);
+        this.userInfo.lastOnlineString = formatTimeDifference(response.data.last_active);
       } catch (error) {
         console.log("GET DATA FAILED : ",error);
       }
@@ -263,32 +265,8 @@ export default {
         if(parseInt(user.userID) === parseInt(this.userInfo.id)){
           this.userInfo.isOnline = user.online;
           this.userInfo.lastOnline = user.last_active;
-          this.userInfo.lastOnlineString = this.formatTimeDifference(user.last_active);
+          this.userInfo.lastOnlineString = formatTimeDifference(user.last_active);
         }
-    },
-    formatTimeDifference(lastActive) {
-      const now = new Date();
-      const lastActiveDate = new Date(lastActive);
-      const diffSeconds = Math.floor((now - lastActiveDate) / 1000); // Chênh lệch giây
-
-      if (diffSeconds < 60) {
-        return 'Vừa truy cập';
-      } else if (diffSeconds < 3600) {
-        const minutes = Math.floor(diffSeconds / 60);
-        return `${minutes} phút trước`;
-      } else if (diffSeconds < 86400) {
-        const hours = Math.floor(diffSeconds / 3600);
-        return `${hours} giờ trước`;
-      } else if (diffSeconds < 604800) {
-        const days = Math.floor(diffSeconds / 86400);
-        return `${days} ngày trước`;
-      } else if (diffSeconds < 2592000) {
-        const weeks = Math.floor(diffSeconds / 604800);
-        return `${weeks} tuần trước`;
-      } else {
-        const months = Math.floor(diffSeconds / 2592000);
-        return `${months} tháng trước`;
-      }
     },
     async scrollToBottom() {
       await this.$nextTick(); // Đảm bảo DOM đã được render trước khi thực hiện
@@ -339,7 +317,7 @@ export default {
     },
     updateLastActiveFriendConversation(){
        if(!this.userInfo.isOnline && this.userInfo.lastOnline){
-          this.userInfo.lastOnlineString = this.formatTimeDifference(this.userInfo.lastOnline);
+          this.userInfo.lastOnlineString = formatTimeDifference(this.userInfo.lastOnline);
        }
     }
   },

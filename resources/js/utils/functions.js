@@ -10,3 +10,28 @@ export function decodeQueryParams(encodedParams) {
     return null;
   }
 }
+
+export function formatTimeDifference(lastActive) {
+  const now = new Date();
+  const lastActiveDate = new Date(lastActive);
+  const diffSeconds = Math.floor((now - lastActiveDate) / 1000); // Chênh lệch giây
+
+  if (diffSeconds < 60) {
+    return 'Vừa truy cập';
+  } else if (diffSeconds < 3600) {
+    const minutes = Math.floor(diffSeconds / 60);
+    return `${minutes} phút trước`;
+  } else if (diffSeconds < 86400) {
+    const hours = Math.floor(diffSeconds / 3600);
+    return `${hours} giờ trước`;
+  } else if (diffSeconds < 604800) {
+    const days = Math.floor(diffSeconds / 86400);
+    return `${days} ngày trước`;
+  } else if (diffSeconds < 2592000) {
+    const weeks = Math.floor(diffSeconds / 604800);
+    return `${weeks} tuần trước`;
+  } else {
+    const months = Math.floor(diffSeconds / 2592000);
+    return `${months} tháng trước`;
+  }
+}

@@ -166,6 +166,7 @@
 </template>
 
 <script>
+import {formatTimeDifference} from '../../utils/functions.js';
 import { UserPlusIcon,UsersIcon,UserGroupIcon } from '@heroicons/vue/24/solid';
 
 export default {
@@ -227,7 +228,7 @@ export default {
             ...person,
             isOnline: !!isOnlineUser, // Kiểm tra nếu có trong danh sách online
             last_active_string: person.last_active
-              ? this.formatTimeDifference(person.last_active)
+              ? formatTimeDifference(person.last_active)
               : null,
           };
         });
@@ -329,39 +330,14 @@ export default {
       if (matchingPerson) {
         matchingPerson.isOnline = user.online;
         matchingPerson.last_active = user.last_active;
-        matchingPerson.last_active_string = this.formatTimeDifference(user.last_active)
-      }
-    },
-    // Hàm tính thời gian trước đó
-    formatTimeDifference(lastActive) {
-      const now = new Date();
-      const lastActiveDate = new Date(lastActive);
-      const diffSeconds = Math.floor((now - lastActiveDate) / 1000); // Chênh lệch giây
-
-      if (diffSeconds < 60) {
-        return 'Vừa truy cập';
-      } else if (diffSeconds < 3600) {
-        const minutes = Math.floor(diffSeconds / 60);
-        return `${minutes} phút trước`;
-      } else if (diffSeconds < 86400) {
-        const hours = Math.floor(diffSeconds / 3600);
-        return `${hours} giờ trước`;
-      } else if (diffSeconds < 604800) {
-        const days = Math.floor(diffSeconds / 86400);
-        return `${days} ngày trước`;
-      } else if (diffSeconds < 2592000) {
-        const weeks = Math.floor(diffSeconds / 604800);
-        return `${weeks} tuần trước`;
-      } else {
-        const months = Math.floor(diffSeconds / 2592000);
-        return `${months} tháng trước`;
+        matchingPerson.last_active_string = formatTimeDifference(user.last_active)
       }
     },
     // Hàm cập nhật last_active cho từng người online
     updateLastActive() {
       this.people.slice(0, 10).forEach(person => {
         if (!person.isOnline && person.last_active) {
-          person.last_active_string = this.formatTimeDifference(person.last_active);
+          person.last_active_string = formatTimeDifference(person.last_active);
         }
       });
     }

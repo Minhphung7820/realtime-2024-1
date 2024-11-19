@@ -86,47 +86,12 @@ export default {
   },
   data() {
     return {
-         viewers: [
-      {
-        id: 1,
-        name: 'John Doe',
-        avatar: 'https://i.pravatar.cc/50?img=1' // URL mẫu cho avatar
-      },
-      {
-        id: 2,
-        name: 'Jane Smith',
-        avatar: 'https://i.pravatar.cc/50?img=2'
-      },
-      {
-        id: 3,
-        name: 'Alice Johnson',
-        avatar: 'https://i.pravatar.cc/50?img=3'
-      },
-      {
-        id: 4,
-        name: 'Robert Brown',
-        avatar: 'https://i.pravatar.cc/50?img=4'
-      },
-      {
-        id: 5,
-        name: 'Emily Davis',
-        avatar: 'https://i.pravatar.cc/50?img=5'
-      },
-      {
-        id: 6,
-        name: 'William Wilson',
-        avatar: 'https://i.pravatar.cc/50?img=6'
-      },
-      {
-        id: 7,
-        name: 'Olivia Taylor',
-        avatar: 'https://i.pravatar.cc/50?img=7'
-      },
-      {
-        id: 8,
-        name: 'Liam Martinez',
-        avatar: 'https://i.pravatar.cc/50?img=8'
-      }
+    viewers: [
+      // {
+      //   id: 1,
+      //   name: 'John Doe',
+      //   avatar: 'https://i.pravatar.cc/50?img=1' // URL mẫu cho avatar
+      // }
     ],
       userInfo: {
         id : null,
@@ -176,6 +141,23 @@ export default {
          }, 500);
       }
     });
+
+    const messageContent = this.$refs.messageContent;
+    if (messageContent) {
+      messageContent.addEventListener('scroll', this.handleScroll);
+    }
+
+    this.socket.on(`seen_message`,(e) =>{
+         const isSeen = this.viewers.some(viewer => parseInt(viewer.id) === parseInt(e.viewer_id));
+         if(!isSeen){
+            this.viewers.push({
+              id: e.viewer_id,
+              name: e.name,
+              avatar:e.avatar
+            });
+         }
+    });
+
     this.updateLastActiveFriendInterval = setInterval(() => {
         this.updateLastActiveFriendConversation();
     }, 1000);
@@ -220,6 +202,29 @@ export default {
     },
   },
   methods: {
+    handleScroll() {
+      const messageContent = this.$refs.messageContent;
+      if (!messageContent) return;
+
+      // Kiểm tra nếu đã cuộn đến cuối
+      const isAtBottom = messageContent.scrollTop === 0;
+      if (isAtBottom) {
+
+        // Bắn sự kiện seen_message
+        const latestMessage = this.messages[0];
+
+        if(latestMessage && parseInt(latestMessage.sender_id) !== parseInt(this.$userProfile.id)){
+
+            this.socket.emit('seen_message', {
+              viewer_id : this.$userProfile.id,
+              conversation_id: this.userInfo.conversation_id,
+              name : this.$userProfile.name,
+              avatar: this.$userProfile.avatar,
+              sender_id : latestMessage.sender_id
+            });
+        }
+      }
+    },
     async findConversation()
     {
       const id = this.dataMessage.id;
@@ -231,8 +236,6 @@ export default {
         this.userInfo.name = response.data.name;
         this.userInfo.lastOnline = response.data.last_active;
         this.userInfo.conversation_id = response.data.conversation_id;
-        console.log(response.data.conversation_id);
-
         this.userInfo.lastOnlineString = this.formatTimeDifference(response.data.last_active);
       } catch (error) {
         console.log("GET DATA FAILED : ",error);

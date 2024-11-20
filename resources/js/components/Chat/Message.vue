@@ -63,6 +63,7 @@
     <input
       v-model="newMessage"
       @keydown="sendTypingEvent"
+      @keydown.enter.prevent="sendMessage"
       type="text"
       placeholder="Nhập tin nhắn..."
       class="flex-1 p-2 sm:p-3 border rounded text-sm sm:text-base focus:outline-none"

@@ -51,13 +51,12 @@ class ChatController extends Controller
         $conversationId = null;
 
         if ($type === 'private') {
-            // Tìm conversation_id cho type = private
             $conversation = DB::table('conversations')
                 ->join('conversation_participants as cp1', 'conversations.id', '=', 'cp1.conversation_id')
                 ->join('conversation_participants as cp2', 'conversations.id', '=', 'cp2.conversation_id')
-                ->where('conversations.type', 'private') // Điều kiện type
-                ->where('cp1.user_id', $userId) // Người hiện tại
-                ->where('cp2.user_id', $id) // Người bạn đang trò chuyện
+                ->where('conversations.type', 'private')
+                ->where('cp1.user_id', $userId)
+                ->where('cp2.user_id', $id)
                 ->select('conversations.id as conversation_id')
                 ->first();
 
@@ -67,10 +66,9 @@ class ChatController extends Controller
 
             $conversationId = $conversation->conversation_id;
         } elseif ($type === 'group') {
-            // Xác minh id là conversation_id của một nhóm
             $conversation = DB::table('conversations')
                 ->where('id', $id)
-                ->where('type', 'group') // Điều kiện type
+                ->where('type', 'group')
                 ->first();
 
             if (!$conversation) {
@@ -82,39 +80,35 @@ class ChatController extends Controller
             return response()->json(['message' => 'Loại type không hợp lệ'], 400);
         }
 
-        // Lấy tin nhắn theo conversation_id
+        // Lấy tin nhắn và subquery lấy viewers
         $messages = DB::table('messages')
             ->where('conversation_id', $conversationId)
             ->orderBy('created_at', 'desc')
             ->select([
                 'messages.*',
-                DB::raw('(CASE WHEN sender_id = ' . $userId . ' THEN "me" ELSE "friends" END) as sender')
+                DB::raw('(CASE WHEN sender_id = ' . $userId . ' THEN "me" ELSE "friends" END) as sender'),
             ])
             ->paginate($request['limit'] ?? 10);
 
-        // Lấy tin nhắn cuối cùng do người dùng gửi
-        $lastMessage = DB::table('messages')
-            ->where('conversation_id', $conversationId)
-            ->where('sender_id', $userId)
-            ->orderBy('created_at', 'desc')
-            ->first();
+        // Lấy lastMessage và viewers trực tiếp
+        $viewers = DB::table('seen_messages')
+            ->join('users', 'seen_messages.user_id', '=', 'users.id')
+            ->join(
+                DB::raw('(SELECT id FROM messages WHERE conversation_id = ' . $conversationId . ' AND sender_id = ' . $userId . ' ORDER BY created_at DESC LIMIT 1) as last_message'),
+                'seen_messages.message_id',
+                '=',
+                'last_message.id'
+            )
+            ->select('users.id', 'users.name', 'users.avatar')
+            ->where('seen_messages.conversation_id', $conversationId)
+            ->get();
 
-        // Lấy danh sách những người đã xem tin nhắn cuối cùng đó
-        $viewers = [];
-        if ($lastMessage) {
-            $viewers = DB::table('seen_messages')
-                ->join('users', 'seen_messages.user_id', '=', 'users.id')
-                ->where('seen_messages.message_id', $lastMessage->id)
-                ->select('users.id', 'users.name', 'users.avatar')
-                ->get();
-        }
-
-        // Chèn thêm mảng viewers vào response
         $response = $messages->toArray();
         $response['viewers'] = $viewers;
 
         return response()->json($response);
     }
+
 
     public function detailConversation(Request $request)
     {

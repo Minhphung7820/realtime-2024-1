@@ -1,6 +1,6 @@
 <template>
   <div class="people-list bg-gray-50 p-2 sm:p-4">
-    <h3 class="font-bold text-lg mb-2">Mọi người</h3>
+    <h3 class="font-bold text-lg mb-2">{{ tabTitle }}</h3>
 
     <!-- Tabs -->
     <div class="tabs flex border-b mb-4">
@@ -185,6 +185,20 @@ export default {
       searchResults:[], // Kết quả tìm kiếm (mẫu)
       countRequestFriend : 0
     };
+  },
+  computed: {
+    tabTitle() {
+      switch (this.activeTab) {
+        case 'friends':
+          return 'Bạn bè';
+        case 'requests':
+          return 'Lời mời kết bạn';
+        case 'search':
+          return 'Tìm kiếm tài khoản';
+        default:
+          return 'Mọi người';
+      }
+    }
   },
   async mounted() {
     await this.fetchPeopleWithStatus();

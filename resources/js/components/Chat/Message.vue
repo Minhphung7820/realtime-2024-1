@@ -293,6 +293,7 @@ export default {
         try {
              const response = await this.$axios.get(`/api/get-message?id=${id}&type=${type}&limit=20`);
              this.messages = response.data.data;
+             this.viewers = response.data.viewers;
              this.scrollToBottom(); // Cuộn xuống cuối cùng
         } catch (error) {
              console.log("Get Failed With Message :".error);

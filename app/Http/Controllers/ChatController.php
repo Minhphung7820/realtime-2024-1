@@ -92,7 +92,28 @@ class ChatController extends Controller
             ])
             ->paginate($request['limit'] ?? 10);
 
-        return response()->json($messages);
+        // Lấy tin nhắn cuối cùng do người dùng gửi
+        $lastMessage = DB::table('messages')
+            ->where('conversation_id', $conversationId)
+            ->where('sender_id', $userId)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        // Lấy danh sách những người đã xem tin nhắn cuối cùng đó
+        $viewers = [];
+        if ($lastMessage) {
+            $viewers = DB::table('seen_messages')
+                ->join('users', 'seen_messages.user_id', '=', 'users.id')
+                ->where('seen_messages.message_id', $lastMessage->id)
+                ->select('users.id', 'users.name', 'users.avatar')
+                ->get();
+        }
+
+        // Chèn thêm mảng viewers vào response
+        $response = $messages->toArray();
+        $response['viewers'] = $viewers;
+
+        return response()->json($response);
     }
 
     public function detailConversation(Request $request)

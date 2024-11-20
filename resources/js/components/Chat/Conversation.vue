@@ -42,7 +42,7 @@
                 Bắt đầu trò chuyện nào!
               </span>
               <span v-else>
-                <strong v-if="conversation.sender === 'me'">Bạn:</strong>  {{ conversation.lastMessage }}
+                <strong v-if="conversation.sender === 'me'">Bạn:</strong> {{ conversation.lastMessage }}
               </span>
             </p>
           </div>
@@ -227,6 +227,21 @@ export default {
 .conversation-item {
   display: flex;
   align-items: center;
+}
+
+.conversation-item .flex-1 {
+  max-width: 100%; /* Giới hạn kích thước của container */
+  overflow: hidden; /* Ẩn nội dung tràn */
+  display: flex; /* Cần thiết để đảm bảo bố cục flex hoạt động đúng */
+  flex-direction: column; /* Để văn bản xếp dọc */
+}
+
+.conversation-item p {
+  display: block;           /* Đảm bảo hiển thị dưới dạng khối */
+  white-space: nowrap;      /* Không cho phép xuống dòng */
+  overflow: hidden;         /* Ẩn phần văn bản bị tràn */
+  text-overflow: ellipsis;  /* Hiển thị dấu "..." khi nội dung quá dài */
+  max-width: 100%;          /* Đảm bảo không vượt quá chiều rộng container */
 }
 
 /* Loại bỏ lớp .status-dot nếu không cần thiết */

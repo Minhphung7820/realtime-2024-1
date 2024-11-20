@@ -65,10 +65,10 @@
       @keydown="sendTypingEvent"
       type="text"
       placeholder="Nhập tin nhắn..."
-      class="flex-1 p-2 sm:p-3 border rounded text-sm sm:text-base"
+      class="flex-1 p-2 sm:p-3 border rounded text-sm sm:text-base focus:outline-none"
     />
     <button @click="sendMessage" class="ml-2 px-2 sm:px-4 py-1 sm:py-2 bg-blue-500 text-white rounded text-sm sm:text-base">
-      Gửi
+      <PaperAirplaneIcon class="h-6 w-6 text-white-500" />
     </button>
   </div>
 </div>
@@ -77,9 +77,13 @@
 
 <script>
 import {formatTimeDifference} from '../../utils/functions.js';
+import { PaperAirplaneIcon } from '@heroicons/vue/24/solid'
 
 export default {
   inject: ['$axios','$userProfile','$socket'],
+  components:{
+    PaperAirplaneIcon
+  },
   props:{
       dataMessage:{
         type:Object,

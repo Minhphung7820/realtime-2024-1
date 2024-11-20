@@ -164,11 +164,11 @@ class ChatController extends Controller
         try {
             $userId = auth()->guard('api')->id();
 
-            // Lấy danh sách các cuộc trò chuyện và người đang trò chuyện với bạn
+            // Lấy danh sách các cuộc trò chuyện
             $conversations = DB::table('conversations')
-                ->leftJoin('conversation_participants as cp1', 'conversations.id', '=', 'cp1.conversation_id') // Join để tìm cuộc trò chuyện của bạn
-                ->leftJoin('conversation_participants as cp2', 'conversations.id', '=', 'cp2.conversation_id') // Join để tìm người khác trong cuộc trò chuyện
-                ->leftJoin('users as ucp2', 'cp2.user_id', '=', 'ucp2.id')
+                ->leftJoin('conversation_participants as cp1', 'conversations.id', '=', 'cp1.conversation_id') // Người dùng hiện tại
+                ->leftJoin('conversation_participants as cp2', 'conversations.id', '=', 'cp2.conversation_id') // Người trò chuyện với bạn
+                ->leftJoin('users as ucp2', 'cp2.user_id', '=', 'ucp2.id') // Thông tin user còn lại
                 ->leftJoin(DB::raw(
                     "(
                        SELECT conversation_id, MAX(id) as latest_id FROM messages GROUP BY conversation_id
@@ -184,16 +184,19 @@ class ChatController extends Controller
                             'conversation_id',
                             DB::raw('COUNT(*) as total_unread')
                         )
-                        ->where('seen', 0)
-                        ->where('sender_id', '!=', $userId)
+                        ->where('sender_id', '!=', $userId) // Tin nhắn không phải của người dùng hiện tại
+                        ->whereRaw('messages.id > IFNULL((SELECT MAX(sm.message_id)
+                                                            FROM seen_messages sm
+                                                            WHERE sm.conversation_id = messages.conversation_id
+                                                            AND sm.user_id = ?), 0)', [$userId]) // Đếm tin nhắn chưa đọc dựa trên seen_messages
                         ->groupBy('conversation_id'),
                     'messages_unread',
                     function ($join) {
                         $join->on('conversations.id', '=', 'messages_unread.conversation_id');
                     }
                 )
-                ->where('cp1.user_id', $userId) // Điều kiện: cuộc trò chuyện của bạn
-                ->where('cp2.user_id', '!=', $userId) // Điều kiện: người khác
+                ->where('cp1.user_id', $userId) // Chỉ lấy cuộc trò chuyện của người dùng hiện tại
+                ->where('cp2.user_id', '!=', $userId) // Loại bỏ chính người dùng khỏi kết quả
                 ->select(
                     'ucp2.id',
                     'ucp2.name',
@@ -204,14 +207,12 @@ class ChatController extends Controller
                     'conversations.id as conversation_id',
                     'messages.content as lastMessage',
                     'messages.created_at as sent_at',
-                    DB::raw('COALESCE(total_unread, 0) as unread'),
-                    DB::raw('false as isOnline')
+                    DB::raw('COALESCE(messages_unread.total_unread, 0) as unread'),
+                    DB::raw('false as isOnline') // Cột kiểm tra online (có thể bổ sung sau)
                 )
                 ->orderByRaw('GREATEST(conversations.created_at, messages.created_at) DESC')
-                // ->limit(5)
                 ->get();
 
-            // Hiển thị kết quả
             return response()->json($conversations);
         } catch (\Exception $e) {
             return response()->json([
@@ -220,13 +221,31 @@ class ChatController extends Controller
         }
     }
 
+
     public function seenMessage(Request $request)
     {
         try {
             return DB::transaction(function () use ($request) {
                 if (isset($request['conversation_id'])) {
                     $userId = auth()->guard('api')->id();
-                    SeenMessage::updateOrCreate(['user_id' => $userId, 'message_id' => $request['message_id']], ['user_id' => $userId, 'message_id' => $request['message_id'], 'conversation_id' => $request['conversation_id'], 'seen_at' => now()->format('Y-m-d H:i:s')]);
+                    $lastMessage = DB::table('messages')
+                        ->where('conversation_id', $request['conversation_id'])
+                        ->where('sender_id', '!=', $userId)
+                        ->orderBy('id', 'desc')
+                        ->value('id');
+                    SeenMessage::updateOrCreate(
+                        [
+                            'user_id' => $userId,
+                            'message_id' => $lastMessage
+                        ],
+                        [
+                            'user_id' => $userId,
+                            'message_id' => $request['message_id'],
+                            'conversation_id' => $request['conversation_id'],
+                            'message_id' => $lastMessage,
+                            'seen_at' => now()->format('Y-m-d H:i:s')
+                        ]
+                    );
                 }
                 return response()->json(true);
             });

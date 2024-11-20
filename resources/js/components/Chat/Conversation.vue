@@ -62,6 +62,10 @@ export default {
      dataMoveConvToTop:{
         type: Object,
         required : false
+     },
+     dataResetUnread: {
+        type: Object,
+        required : false
      }
   },
   data() {
@@ -78,6 +82,12 @@ export default {
         this.moveConvToTop(newData);
       },
     },
+    dataResetUnread:{
+      immediate: true,
+      handler(newData) {
+        this.resetUnread(newData);
+      },
+    }
   },
   async mounted()
   {
@@ -121,6 +131,13 @@ export default {
     this.isLoading = false;
   },
   methods: {
+    resetUnread(data)
+    {
+      const convReset = this.conversations.find(conv => parseInt(conv.conversation_id) === parseInt(data.id));
+      if(convReset){
+         convReset.unread = 0;
+      }
+    },
     async moveConvToTop(objectConv) {
       if (Object.keys(objectConv).length > 0) {
         // Kiểm tra xem conversation đã tồn tại hay chưa

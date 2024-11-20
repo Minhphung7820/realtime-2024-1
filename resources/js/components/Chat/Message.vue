@@ -208,7 +208,7 @@ export default {
     },
   },
   methods: {
-    scrollToBottomWithTrigger() {
+   async scrollToBottomWithTrigger() {
       const messageContent = this.$refs.messageContent;
       if (!messageContent) return;
 
@@ -218,16 +218,25 @@ export default {
 
         // Bắn sự kiện seen_message
         const latestMessage = this.messages[0];
-
         if(latestMessage && parseInt(latestMessage.sender_id) !== parseInt(this.$userProfile.id)){
           this.triggerSeenMessage(latestMessage);
+          this.$emit(`reset-unread`,{
+            id:this.userInfo.conversation_id,
+            message_id: latestMessage.id
+          });
+          try {
+             await this.$axios.post(`/api/seen-message`,{
+              conversation_id : this.userInfo.conversation_id
+             });
+          } catch (error) {
+             console.log("Seen Failed",error);
+
+          }
         }
       }
     },
     triggerSeenMessage(latestMessage)
     {
-      console.log(latestMessage.sender_id);
-
       this.socket.emit('seen_message', {
           viewer_id : this.$userProfile.id,
           conversation_id: this.userInfo.conversation_id,

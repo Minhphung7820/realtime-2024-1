@@ -56,6 +56,8 @@
 </template>
 
 <script>
+import {encodeQueryParams} from '../../utils/functions.js';
+
 export default {
   inject: ['$axios','$userProfile','$socket'],
   props:{
@@ -167,6 +169,7 @@ export default {
         // Nếu người dùng đang mở chính họ, không làm gì cả
         return;
       }
+      this.$router.push({ query: {messages: encodeQueryParams({id:userId,type})}});
        // Reset số tin nhắn chưa đọc
       const matchingConversation = this.conversations.find(convo => parseInt(convo.id) === parseInt(userId));
       if (matchingConversation) {

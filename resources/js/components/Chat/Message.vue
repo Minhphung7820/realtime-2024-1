@@ -93,13 +93,13 @@ export default {
   },
   data() {
     return {
-    viewers: [
+      viewers: [
       // {
       //   id: 1,
       //   name: 'John Doe',
       //   avatar: 'https://i.pravatar.cc/50?img=1' // URL mẫu cho avatar
       // }
-    ],
+      ],
       userInfo: {
         id : null,
         name: '', // Tên người dùng

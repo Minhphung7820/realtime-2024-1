@@ -25,6 +25,7 @@ import Conversation from './Conversation.vue';
 import People from './People.vue';
 import Message from './Message.vue';
 import Profile from '../Auth/Profile.vue';
+import {decodeQueryParams} from '../../utils/functions.js';
 
 export default {
   components: {
@@ -41,6 +42,19 @@ export default {
       isDesktop: window.innerWidth >= 640,
       dataMessage : {}
     };
+  },
+  watch: {
+    '$route.query.messages'(newQuery) {
+      const decodedParams = decodeQueryParams(newQuery);
+      this.openChat(decodedParams.id,decodedParams.type)
+    }
+  },
+  created(){
+      const encodedQuery = this.$route.query.messages;
+      if(encodedQuery){
+        const decodedParams = decodeQueryParams(encodedQuery);
+        this.openChat(decodedParams.id,decodedParams.type);
+      }
   },
   methods: {
     resetUnread(data)

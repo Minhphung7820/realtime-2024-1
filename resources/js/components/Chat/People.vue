@@ -166,7 +166,7 @@
 </template>
 
 <script>
-import {formatTimeDifference} from '../../utils/functions.js';
+import {formatTimeDifference,encodeQueryParams} from '../../utils/functions.js';
 import { UserPlusIcon,UsersIcon,UserGroupIcon } from '@heroicons/vue/24/solid';
 
 export default {
@@ -268,6 +268,7 @@ export default {
         // Nếu người dùng đang mở chính họ, không làm gì cả
         return;
       }
+      this.$router.push({ query: {messages: encodeQueryParams({id:userId,type})}});
       this.$emit('open-chat', userId, type); // Phát sự kiện open-chat lên cha
     },
     async changeStatusRequestFriend(requestId,status){

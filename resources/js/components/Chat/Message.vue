@@ -69,6 +69,24 @@
           </button>
         </div>
       </div>
+      <!-- Hiển thị danh sách avatar sau tin nhắn cuối cùng của bạn -->
+      <div v-if="msg.sender === 'me' && index === 0" class="seen-avatars flex items-center mt-1">
+        <div
+          v-for="(viewer, i) in viewers.slice(0, 5)"
+          :key="viewer.id"
+          class="w-6 h-6 rounded-full overflow-hidden border-2 border-white -ml-2"
+          :style="{ zIndex: viewers.length - i }"
+        >
+          <img
+            :src="viewer.avatar"
+            alt="viewer avatar"
+            class="w-full h-full object-cover"
+          />
+        </div>
+        <div v-if="viewers.length > 5" class="extra-viewers text-sm text-gray-600 ml-2">
+          +{{ viewers.length - 5 }}
+        </div>
+      </div>
     </div>
   </div>
 
@@ -134,11 +152,11 @@ export default {
       showEmojiPicker: false,
       availableReactions: ['👍', '❤️', '😂', '😮', '😢', '😡'],
       viewers: [
-      // {
-      //   id: 1,
-      //   name: 'John Doe',
-      //   avatar: 'https://i.pravatar.cc/50?img=1' // URL mẫu cho avatar
-      // }
+      {
+        id: 1,
+        name: 'John Doe',
+        avatar: 'https://i.pravatar.cc/50?img=1' // URL mẫu cho avatar
+      }
       ],
       userInfo: {
         id : null,
@@ -225,8 +243,10 @@ export default {
   watch: {
     dataMessage: {
       immediate: true, // Gọi ngay lần đầu khi component được mount
-      async handler(newData) {
-        if (newData) {
+      async handler(newData,oldData) {
+         if (!newData || (oldData && newData.id === oldData.id && newData.type === oldData.type)) {
+              return; // Nếu không có sự thay đổi thực sự, thoát ra
+         }
           // Reset dữ liệu
           if(this.socket && this.userInfo.conversation_id){
             // this.socket.emit('leave_conversation', this.userInfo.conversation_id);
@@ -251,7 +271,6 @@ export default {
           this.socket.emit('join_conversation', this.userInfo.conversation_id);
           this.isLoading = false;
           this.scrollToBottom();
-        }
       },
     },
   },
@@ -363,11 +382,12 @@ export default {
           sender_id : latestMessage.sender_id
       });
     },
-    async findConversation()
-    {
-      const id = this.dataMessage.id;
-      const type = this.dataMessage.type;
+    async findConversation() {
+      if (this.isDataFetching) return; // Nếu đang tải, không thực hiện
+      this.isDataFetching = true;
       try {
+        const id = this.dataMessage.id;
+        const type = this.dataMessage.type;
         const response = await this.$axios.get(`/api/get-detail-conversation?id=${id}&type=${type}`);
         this.userInfo.id = response.data.id;
         this.userInfo.avatar = response.data.avatar;
@@ -376,9 +396,11 @@ export default {
         this.userInfo.conversation_id = response.data.conversation_id;
         this.userInfo.lastOnlineString = formatTimeDifference(response.data.last_active);
       } catch (error) {
-        console.log("GET DATA FAILED : ",error);
+        console.error('GET DATA FAILED:', error);
+      } finally {
+        this.isDataFetching = false; // Reset trạng thái
       }
-     },
+    },
      async getStatusUserOnline() {
         try {
           const response = await this.$axios.get(`http://localhost:6060/api/online-users`);

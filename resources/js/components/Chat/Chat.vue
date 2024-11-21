@@ -66,6 +66,9 @@ export default {
        this.dataMoveConvToTop = data;
     },
     openChat(data,type) {
+      if (this.isChatOpen && this.dataMessage.id === data && this.dataMessage.type === type) {
+        return; // Nếu đã mở đúng cuộc trò chuyện, không làm gì cả
+      }
       this.isChatOpen = true;
       this.dataMessage = {
         id : data,type

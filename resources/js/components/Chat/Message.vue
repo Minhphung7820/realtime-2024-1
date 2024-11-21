@@ -94,7 +94,7 @@
 </template>
 
 <script>
-import {formatTimeDifference} from '../../utils/functions.js';
+import {formatTimeDifference,getFlagEmoji} from '../../utils/functions.js';
 import { PaperAirplaneIcon,FaceSmileIcon } from '@heroicons/vue/24/solid'
 import EmojiPicker from 'vue3-emoji-picker'
 import 'vue3-emoji-picker/css'

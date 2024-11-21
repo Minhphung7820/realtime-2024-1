@@ -81,7 +81,7 @@
         v-if="showEmojiPicker"
         class="emoji-picker-container absolute bottom-12 right-0"
       >
-        <EmojiPicker @select="onSelectEmoji" />
+        <EmojiPicker :display-recent="true" @select="onSelectEmoji" />
       </div>
     </div>
     <!-- Nút gửi -->

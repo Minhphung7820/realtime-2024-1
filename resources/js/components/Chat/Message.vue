@@ -60,26 +60,31 @@
   </div>
   <!-- Input: Nhập và gửi tin nhắn -->
   <div class="message-input mt-2 flex items-center flex-shrink-0 relative">
-    <button
-      @click="toggleEmojiPicker"
-      class="emoji-btn mr-2 bg-gray-100 p-2 rounded"
-    >
-      😊
-    </button>
-    <div
-      v-if="showEmojiPicker"
-      class="emoji-picker-container absolute bottom-20 left-0"
-    >
-    <EmojiPicker @select="onSelectEmoji" />
+    <div class="input-container relative flex-1">
+      <input
+        v-model="newMessage"
+        @keydown="sendTypingEvent"
+        @keydown.enter.prevent="sendMessage"
+        type="text"
+        placeholder="Nhập tin nhắn..."
+        class="w-full p-2 sm:p-3 border rounded text-sm sm:text-base focus:outline-none pr-10"
+      />
+      <!-- Nút Emoji -->
+      <button
+        @click="toggleEmojiPicker"
+        class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+      >
+        😊
+      </button>
+      <!-- Emoji Picker -->
+      <div
+        v-if="showEmojiPicker"
+        class="emoji-picker-container absolute bottom-12 right-0"
+      >
+        <EmojiPicker @select="onSelectEmoji" />
+      </div>
     </div>
-    <input
-      v-model="newMessage"
-      @keydown="sendTypingEvent"
-      @keydown.enter.prevent="sendMessage"
-      type="text"
-      placeholder="Nhập tin nhắn..."
-      class="flex-1 p-2 sm:p-3 border rounded text-sm sm:text-base focus:outline-none"
-    />
+    <!-- Nút gửi -->
     <button @click="sendMessage" class="ml-2 px-2 sm:px-4 py-1 sm:py-2 bg-blue-500 text-white rounded text-sm sm:text-base">
       <PaperAirplaneIcon class="h-6 w-6 text-white-500" />
     </button>
@@ -232,25 +237,25 @@ export default {
     toggleEmojiPicker() {
       this.showEmojiPicker = !this.showEmojiPicker;
       if (this.showEmojiPicker) {
-        document.addEventListener('click', this.closeEmojiPickerOnBlur);
+        document.addEventListener('click', this.closeEmojiPickerOnBlur, { capture: true });
+      } else {
+        document.removeEventListener('click', this.closeEmojiPickerOnBlur, { capture: true });
       }
     },
     closeEmojiPickerOnBlur(event) {
       const emojiPicker = this.$el.querySelector('.emoji-picker-container');
-      const emojiButton = this.$el.querySelector('.emoji-btn');
       if (
         emojiPicker &&
-        !emojiPicker.contains(event.target) &&
-        !emojiButton.contains(event.target)
+        !emojiPicker.contains(event.target) // Kiểm tra nếu click không nằm trong Emoji Picker
       ) {
         this.showEmojiPicker = false;
-        document.removeEventListener('click', this.closeEmojiPickerOnBlur);
+        document.removeEventListener('click', this.closeEmojiPickerOnBlur, { capture: true });
       }
     },
     onSelectEmoji(event) {
-      console.log(event);
-
-      this.newMessage += event.i;
+      if (event && event.i) {
+        this.newMessage += event.i; // Thêm emoji vào nội dung tin nhắn
+      }
     },
     async scrollToBottomWithTrigger() {
       const messageContent = this.$refs.messageContent;
@@ -495,4 +500,35 @@ export default {
 .message-content .seen-avatars {
   margin-top: 8px; /* Khoảng cách giữa tin nhắn và danh sách avatar */
 }
+
+.input-container {
+  position: relative;
+}
+
+.input-container input {
+  padding-right: 2.5rem; /* Dành không gian cho nút emoji */
+}
+
+.input-container button {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.input-container button:hover {
+  color: #007bff; /* Màu hover giống Messenger */
+}
+
+.emoji-picker-container {
+  z-index: 10;
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
 </style>

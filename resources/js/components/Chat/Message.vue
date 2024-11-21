@@ -59,7 +59,19 @@
       Người bên kia đang gõ...
   </div>
   <!-- Input: Nhập và gửi tin nhắn -->
-  <div class="message-input mt-2 flex items-center flex-shrink-0">
+  <div class="message-input mt-2 flex items-center flex-shrink-0 relative">
+    <button
+      @click="toggleEmojiPicker"
+      class="emoji-btn mr-2 bg-gray-100 p-2 rounded"
+    >
+      😊
+    </button>
+    <div
+      v-if="showEmojiPicker"
+      class="emoji-picker-container absolute bottom-20 left-0"
+    >
+    <EmojiPicker @select="onSelectEmoji" />
+    </div>
     <input
       v-model="newMessage"
       @keydown="sendTypingEvent"
@@ -79,11 +91,14 @@
 <script>
 import {formatTimeDifference} from '../../utils/functions.js';
 import { PaperAirplaneIcon } from '@heroicons/vue/24/solid'
+import EmojiPicker from 'vue3-emoji-picker'
+import 'vue3-emoji-picker/css'
 
 export default {
   inject: ['$axios','$userProfile','$socket'],
   components:{
-    PaperAirplaneIcon
+    PaperAirplaneIcon,
+    EmojiPicker
   },
   props:{
       dataMessage:{
@@ -93,6 +108,7 @@ export default {
   },
   data() {
     return {
+      showEmojiPicker: false,
       viewers: [
       // {
       //   id: 1,
@@ -213,7 +229,30 @@ export default {
     },
   },
   methods: {
-   async scrollToBottomWithTrigger() {
+    toggleEmojiPicker() {
+      this.showEmojiPicker = !this.showEmojiPicker;
+      if (this.showEmojiPicker) {
+        document.addEventListener('click', this.closeEmojiPickerOnBlur);
+      }
+    },
+    closeEmojiPickerOnBlur(event) {
+      const emojiPicker = this.$el.querySelector('.emoji-picker-container');
+      const emojiButton = this.$el.querySelector('.emoji-btn');
+      if (
+        emojiPicker &&
+        !emojiPicker.contains(event.target) &&
+        !emojiButton.contains(event.target)
+      ) {
+        this.showEmojiPicker = false;
+        document.removeEventListener('click', this.closeEmojiPickerOnBlur);
+      }
+    },
+    onSelectEmoji(event) {
+      console.log(event);
+
+      this.newMessage += event.i;
+    },
+    async scrollToBottomWithTrigger() {
       const messageContent = this.$refs.messageContent;
       if (!messageContent) return;
 

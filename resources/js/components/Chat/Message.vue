@@ -170,7 +170,7 @@ export default {
     this.socket.on('receive_message', async (e) => {
       if (parseInt(e.conversation_id) === parseInt(this.userInfo.conversation_id)) {
         const sender = parseInt(e.sender_id) === parseInt(this.$userProfile.id) ? 'me' : 'friend';
-        this.messages.unshift({ sender, content: e.content,sender_id:e.sender_id });
+        this.messages.unshift({ sender, content: e.content,sender_id:e.sender_id ,reactions : [],total_reactions : 0});
 
         // Cuộn xuống cuối và tự động kích hoạt trigger nếu cần
         await this.scrollToBottom();
@@ -280,10 +280,10 @@ export default {
     async addReaction(messageIndex, emoji) {
       const messageId = this.messages[messageIndex].id;
       try {
-        await this.$axios.post(`/api/add-reaction`, {
-          message_id: messageId,
-          emoji: emoji,
-        });
+        // await this.$axios.post(`/api/add-reaction`, {
+        //   message_id: messageId,
+        //   emoji: emoji,
+        // });
         // Cập nhật lại message với reaction mới
         const updatedMessage = this.messages[messageIndex];
         const reaction = updatedMessage.reactions.find((r) => r.emoji === emoji);
@@ -292,7 +292,7 @@ export default {
         } else {
           updatedMessage.reactions.push({ emoji, count: 1 }); // Thêm mới nếu chưa tồn tại
         }
-        updatedMessage.totalReactions += 1; // Tăng tổng số reaction
+        updatedMessage.total_reactions += 1; // Tăng tổng số reaction
         updatedMessage.showMenu = false; // Đóng menu sau khi thêm reaction
       } catch (error) {
         console.error('Failed to add reaction:', error);

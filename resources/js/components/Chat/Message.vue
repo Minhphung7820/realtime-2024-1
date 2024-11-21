@@ -152,11 +152,11 @@ export default {
       showEmojiPicker: false,
       availableReactions: ['👍', '❤️', '😂', '😮', '😢', '😡'],
       viewers: [
-      {
-        id: 1,
-        name: 'John Doe',
-        avatar: 'https://i.pravatar.cc/50?img=1' // URL mẫu cho avatar
-      }
+      // {
+      //   id: 1,
+      //   name: 'John Doe',
+      //   avatar: 'https://i.pravatar.cc/50?img=1' // URL mẫu cho avatar
+      // }
       ],
       userInfo: {
         id : null,
@@ -383,8 +383,8 @@ export default {
       });
     },
     async findConversation() {
-      if (this.isDataFetching) return; // Nếu đang tải, không thực hiện
-      this.isDataFetching = true;
+      if (this.isDataConvFetching) return; // Nếu đang tải, không thực hiện
+      this.isDataConvFetching = true;
       try {
         const id = this.dataMessage.id;
         const type = this.dataMessage.type;
@@ -398,16 +398,22 @@ export default {
       } catch (error) {
         console.error('GET DATA FAILED:', error);
       } finally {
-        this.isDataFetching = false; // Reset trạng thái
+        this.isDataConvFetching = false; // Reset trạng thái
       }
     },
      async getStatusUserOnline() {
+        if(this.isDataUserOnlineFetching){
+          return;
+        }
+        this.isDataUserOnlineFetching = true;
         try {
           const response = await this.$axios.get(`http://localhost:6060/api/online-users`);
           const onlineUsers = response.data.data;
           this.userInfo.isOnline = onlineUsers.some(item => parseInt(item.userID) === parseInt(this.userInfo.id));
         } catch (error) {
           console.error('Failed to fetch online users:', error);
+        } finally{
+          this.isDataUserOnlineFetching = false;
         }
     },
     handleUserWithStatusFromSocket(user){
@@ -428,6 +434,10 @@ export default {
       }
     },
     async getMessage(){
+        if(this.isDataMessageFetching){
+          return ;
+        }
+        this.isDataMessageFetching = true;
         const id = this.dataMessage.id;
         const type = this.dataMessage.type;
         try {
@@ -441,6 +451,8 @@ export default {
              this.scrollToBottom(); // Cuộn xuống cuối cùng
         } catch (error) {
              console.log("Get Failed With Message :".error);
+        } finally{
+             this.isDataMessageFetching = false;
         }
     },
    async sendMessage() {

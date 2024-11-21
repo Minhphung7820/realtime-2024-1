@@ -76,6 +76,8 @@ export default {
     },
     closeChat() {
       this.isChatOpen = false;
+      this.dataMessage = {};
+      this.$router.push(`/`);
     },
     handleResize() {
       this.isDesktop = window.innerWidth >= 640;

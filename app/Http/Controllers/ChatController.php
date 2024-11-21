@@ -81,8 +81,7 @@ class ChatController extends Controller
         }
 
         // Lấy tin nhắn và subquery lấy viewers
-        $messages = DB::table('messages')
-            ->where('conversation_id', $conversationId)
+        $messages = Message::with('reactions')->where('conversation_id', $conversationId)
             ->orderBy('created_at', 'desc')
             ->select([
                 'messages.*',

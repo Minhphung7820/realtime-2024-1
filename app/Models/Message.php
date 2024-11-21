@@ -26,4 +26,11 @@ class Message extends Model
     {
         return $this->belongsTo(User::class, 'sender_id');
     }
+
+    public function reactions()
+    {
+        return $this->hasMany(Reaction::class)
+            ->selectRaw('message_id, emoji, COUNT(*) as count')
+            ->groupBy('message_id', 'emoji');
+    }
 }

@@ -27,29 +27,46 @@
   </div>
   <!-- Phần tin nhắn (có cuộn) -->
   <div v-else ref="messageContent" class="message-content flex-1 overflow-y-auto p-2">
-    <div v-for="(msg, index) in messages" :key="index" class="mb-2">
+    <div v-for="(msg, index) in messages" :key="index" class="mb-2 relative group">
       <div :class="msg.sender === 'me' ? 'my-message-container' : 'friend-message-container'">
-        <div :class="msg.sender === 'me' ? 'my-message' : 'friend-message'">
+        <div :class="msg.sender === 'me' ? 'my-message' : 'friend-message'" @click="toggleActiveMessage(index)">
           <p>{{ msg.content }}</p>
+          <!-- Reactions -->
+          <div v-if="msg.reactions.length > 0" class="reactions flex items-center mt-1">
+            <div v-for="(reaction, i) in getTopReactions(msg.reactions)" :key="i" class="reaction flex items-center mr-2">
+              <span>{{ reaction.emoji }}</span>
+              <span class="ml-1 text-sm text-gray-600">{{ reaction.count }}</span>
+            </div>
+            <div class="total-reactions text-xs text-gray-500 ml-2">
+              {{ msg.total_reactions }}
+            </div>
+          </div>
+
+             <!-- Nút thêm reaction (hiển thị khi isActive là true) -->
+          <button
+            v-if="msg.isActive"
+            @click.stop="toggleReactionMenu(index)"
+            class="reaction-button rounded reaction-button-add-emoji text-gray-600"
+          >
+           +
+          </button>
         </div>
       </div>
-
-      <!-- Hiển thị danh sách avatar sau tin nhắn cuối cùng của bạn -->
-      <div v-if="msg.sender === 'me' && index === 0" class="seen-avatars flex items-center mt-1">
+      <!-- Nút thêm reaction -->
+      <div class="reaction-picker mt-1 flex justify-start absolute right-0">
+        <!-- Menu emoji -->
         <div
-          v-for="(viewer, i) in viewers.slice(0, 5)"
-          :key="viewer.id"
-          class="w-6 h-6 rounded-full overflow-hidden border-2 border-white -ml-2"
-          :style="{ zIndex: viewers.length - i }"
+          v-if="msg.showMenu"
+          class="emoji-menu bg-white border rounded p-1 shadow-lg absolute bottom-full right-0 z-10 flex space-x-1"
         >
-          <img
-            :src="viewer.avatar"
-            alt="viewer avatar"
-            class="w-full h-full object-cover"
-          />
-        </div>
-        <div v-if="viewers.length > 5" class="extra-viewers text-sm text-gray-600 ml-2">
-          +{{ viewers.length - 5 }}
+          <button
+            v-for="emoji in availableReactions"
+            :key="emoji"
+            @click="addReaction(index, emoji)"
+            class="reaction-button text-gray-600 hover:text-blue-500"
+          >
+            {{ emoji }}
+          </button>
         </div>
       </div>
     </div>
@@ -115,6 +132,7 @@ export default {
   data() {
     return {
       showEmojiPicker: false,
+      availableReactions: ['👍', '❤️', '😂', '😮', '😢', '😡'],
       viewers: [
       // {
       //   id: 1,
@@ -189,6 +207,8 @@ export default {
          }
     });
     //
+    document.addEventListener('click', this.handleClickOutside);
+    //
     this.updateLastActiveFriendInterval = setInterval(() => {
         this.updateLastActiveFriendConversation();
     }, 1000);
@@ -199,6 +219,7 @@ export default {
     if(this.socket && this.userInfo.conversation_id){
       // this.socket.emit('leave_conversation', this.userInfo.conversation_id);
     }
+    document.removeEventListener('click', this.handleClickOutside);
     clearInterval(this.updateLastActiveFriendInterval);
   },
   watch: {
@@ -235,6 +256,53 @@ export default {
     },
   },
   methods: {
+    handleClickOutside(event) {
+      const messageBox = this.$el; // Lấy root element của component
+      if (!messageBox.contains(event.target)) {
+        // Nếu click bên ngoài component
+        this.messages.forEach((msg) => {
+          msg.isActive = false; // Ẩn dấu cộng
+          msg.showMenu = false; // Ẩn menu reaction
+        });
+      }
+    },
+    toggleActiveMessage(index) {
+      // Đặt tất cả tin nhắn khác thành không được chọn
+      this.messages.forEach((msg, i) => {
+        msg.isActive = i === index; // Chỉ đặt tin nhắn được click là active
+      });
+    },
+    toggleReactionMenu(messageIndex) {
+      this.messages.forEach((msg, index) => {
+        msg.showMenu = index === messageIndex ? !msg.showMenu : false; // Chỉ mở menu cho tin nhắn được nhấn
+      });
+    },
+    async addReaction(messageIndex, emoji) {
+      const messageId = this.messages[messageIndex].id;
+      try {
+        await this.$axios.post(`/api/add-reaction`, {
+          message_id: messageId,
+          emoji: emoji,
+        });
+        // Cập nhật lại message với reaction mới
+        const updatedMessage = this.messages[messageIndex];
+        const reaction = updatedMessage.reactions.find((r) => r.emoji === emoji);
+        if (reaction) {
+          reaction.count += 1; // Tăng count nếu reaction đã tồn tại
+        } else {
+          updatedMessage.reactions.push({ emoji, count: 1 }); // Thêm mới nếu chưa tồn tại
+        }
+        updatedMessage.totalReactions += 1; // Tăng tổng số reaction
+        updatedMessage.showMenu = false; // Đóng menu sau khi thêm reaction
+      } catch (error) {
+        console.error('Failed to add reaction:', error);
+      }
+    },
+    getTopReactions(reactions) {
+      return [...reactions]
+        .sort((a, b) => b.count - a.count) // Sắp xếp giảm dần theo count
+        .slice(0, 3); // Lấy 3 reaction đầu tiên
+    },
     toggleEmojiPicker() {
       this.showEmojiPicker = !this.showEmojiPicker;
       if (this.showEmojiPicker) {
@@ -341,8 +409,12 @@ export default {
         const id = this.dataMessage.id;
         const type = this.dataMessage.type;
         try {
-             const response = await this.$axios.get(`/api/get-message?id=${id}&type=${type}&limit=20`);
-             this.messages = response.data.data;
+              const response = await this.$axios.get(`/api/get-message?id=${id}&type=${type}&limit=20`);
+              this.messages = response.data.data.map((msg) => ({
+                ...msg,
+                showMenu: false, // Menu emoji ban đầu ẩn
+                isActive: false, // Mặc định không được chọn
+              }));
              this.viewers = response.data.viewers;
              this.scrollToBottom(); // Cuộn xuống cuối cùng
         } catch (error) {
@@ -466,6 +538,7 @@ export default {
   word-wrap: break-word;
   font-size: 0.875rem;
   text-align: right;
+  cursor: pointer;
 }
 
 /* Tin nhắn của bạn bè */
@@ -478,6 +551,7 @@ export default {
   word-wrap: break-word;
   font-size: 0.875rem;
   text-align: left;
+  cursor: pointer;
 }
 
 .seen-avatars {
@@ -530,6 +604,64 @@ export default {
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+}
+
+.my-message .reaction-button-add-emoji{
+  cursor: pointer;
+}
+
+.reactions {
+  display: flex;
+  align-items: center;
+}
+
+.reaction {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  padding: 2px 4px;
+  background-color: #f1f5f9;
+  border-radius: 4px;
+}
+
+.reaction-button {
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 6px;
+}
+
+.reaction-button:hover {
+  transform: scale(1.1);
+}
+
+.group:hover .reaction-button {
+  opacity: 1; /* Hiện khi hover */
+}
+
+.emoji-menu {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+}
+
+.reaction-button {
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 6px;
+}
+
+.reaction-button:hover {
+  transform: scale(1.2);
+}
+
+.emoji-menu .reaction-button {
+  font-size: 1.25rem;
+  margin: 0;
+  padding: 2px;
 }
 
 </style>

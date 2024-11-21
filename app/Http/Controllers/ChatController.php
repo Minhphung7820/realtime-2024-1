@@ -86,6 +86,7 @@ class ChatController extends Controller
             ->select([
                 'messages.*',
                 DB::raw('(CASE WHEN sender_id = ' . $userId . ' THEN "me" ELSE "friends" END) as sender'),
+                DB::raw('(SELECT COUNT(*) FROM reactions WHERE reactions.message_id = messages.id) as total_reactions')
             ])
             ->paginate($request['limit'] ?? 10);
 

@@ -724,4 +724,8 @@ export default {
   left: 1.6rem;
   display: block;
 }
+.friend-message:hover .reaction-button-add-emoji{
+  bottom: -12px; /* Căn dưới tin nhắn */
+  left: -12px; /* Căn phải tin nhắn */
+}
 </style>

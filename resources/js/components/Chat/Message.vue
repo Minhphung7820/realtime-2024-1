@@ -29,7 +29,7 @@
   <div v-else ref="messageContent" class="message-content flex-1 overflow-y-auto p-2">
     <div v-for="(msg, index) in messages" :key="index" class="mb-2">
       <div :class="msg.sender === 'me' ? 'my-message-container' : 'friend-message-container'">
-        <div :class="msg.sender === 'me' ? 'my-message relative group' : 'friend-message relative group'" @click="toggleActiveMessage(index)">
+        <div :class="msg.sender === 'me' ? 'my-message relative group' : 'friend-message relative group'">
           <p>{{ msg.content }}</p>
           <!-- Reactions -->
           <div v-if="msg.reactions.length > 0" class="reactions flex items-center mt-1">
@@ -41,19 +41,14 @@
               {{ msg.total_reactions }}
             </div>
           </div>
-
              <!-- Nút thêm reaction (hiển thị khi isActive là true) -->
-          <button
-            @click.stop="toggleReactionMenu(index)"
+          <div
             class="reaction-button-add-emoji hidden group-hover:block"
           >
            +
-          </button>
-          <!-- Nút thêm reaction -->
-          <div class="reaction-picker mt-1 flex justify-start absolute right-0">
+          <div class="reaction-picker hidden absolute">
             <!-- Menu emoji -->
             <div
-              v-if="msg.showMenu"
               class="emoji-menu bg-white border p-1 shadow-lg absolute bottom-full right-0 z-10 flex space-x-1"
             >
               <button
@@ -66,6 +61,8 @@
               </button>
             </div>
           </div>
+          </div>
+          <!-- Nút thêm reaction -->
         </div>
       </div>
       <!-- Hiển thị danh sách avatar sau tin nhắn cuối cùng của bạn -->
@@ -646,7 +643,10 @@ export default {
 }
 /* Nút thêm reaction (dấu cộng) */
 .reaction-button-add-emoji {
+  text-align: center;
   position: absolute;
+  justify-content: center;
+  padding-top: 3px;
   bottom: -12px; /* Căn dưới tin nhắn */
   right: -12px; /* Căn phải tin nhắn */
   width: 30px; /* Kích thước nút */
@@ -715,4 +715,7 @@ export default {
   padding: 2px;
 }
 
+.reaction-button-add-emoji:hover .reaction-picker{
+  display: block;
+}
 </style>

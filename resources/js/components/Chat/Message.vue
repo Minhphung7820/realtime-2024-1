@@ -49,7 +49,7 @@
           <div class="reaction-picker hidden absolute">
             <!-- Menu emoji -->
             <div
-              class="emoji-menu bg-white border p-1 shadow-lg absolute bottom-full right-0 z-10 flex space-x-1"
+              class="emoji-menu bg-white border p-1 shadow-lg absolute bottom-full z-10 flex space-x-1"
             >
               <button
                 v-for="emoji in availableReactions"
@@ -639,7 +639,7 @@ export default {
 .my-message,
 .friend-message {
   position: relative;
-  padding-bottom: 20px; /* Tạo khoảng trống cho nút dấu cộng */
+
 }
 /* Nút thêm reaction (dấu cộng) */
 .reaction-button-add-emoji {
@@ -715,7 +715,13 @@ export default {
   padding: 2px;
 }
 
+.my-message .reaction-button-add-emoji:hover .reaction-picker{
+  left: -13.6rem;
+  display: block;
+}
+
 .reaction-button-add-emoji:hover .reaction-picker{
+  left: 1.6rem;
   display: block;
 }
 </style>

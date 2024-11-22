@@ -27,9 +27,9 @@
   </div>
   <!-- Phần tin nhắn (có cuộn) -->
   <div v-else ref="messageContent" class="message-content flex-1 overflow-y-auto p-2">
-    <div v-for="(msg, index) in messages" :key="index" class="mb-2 relative group">
+    <div v-for="(msg, index) in messages" :key="index" class="mb-2">
       <div :class="msg.sender === 'me' ? 'my-message-container' : 'friend-message-container'">
-        <div :class="msg.sender === 'me' ? 'my-message' : 'friend-message'" @click="toggleActiveMessage(index)">
+        <div :class="msg.sender === 'me' ? 'my-message relative group' : 'friend-message relative group'" @click="toggleActiveMessage(index)">
           <p>{{ msg.content }}</p>
           <!-- Reactions -->
           <div v-if="msg.reactions.length > 0" class="reactions flex items-center mt-1">
@@ -44,29 +44,28 @@
 
              <!-- Nút thêm reaction (hiển thị khi isActive là true) -->
           <button
-            v-if="msg.isActive"
             @click.stop="toggleReactionMenu(index)"
-            class="reaction-button rounded reaction-button-add-emoji text-gray-600"
+            class="reaction-button-add-emoji hidden group-hover:block"
           >
            +
           </button>
-        </div>
-      </div>
-      <!-- Nút thêm reaction -->
-      <div class="reaction-picker mt-1 flex justify-start absolute right-0">
-        <!-- Menu emoji -->
-        <div
-          v-if="msg.showMenu"
-          class="emoji-menu bg-white border rounded p-1 shadow-lg absolute bottom-full right-0 z-10 flex space-x-1"
-        >
-          <button
-            v-for="emoji in availableReactions"
-            :key="emoji"
-            @click="addReaction(index, emoji)"
-            class="reaction-button text-gray-600 hover:text-blue-500"
-          >
-            {{ emoji }}
-          </button>
+          <!-- Nút thêm reaction -->
+          <div class="reaction-picker mt-1 flex justify-start absolute right-0">
+            <!-- Menu emoji -->
+            <div
+              v-if="msg.showMenu"
+              class="emoji-menu bg-white border p-1 shadow-lg absolute bottom-full right-0 z-10 flex space-x-1"
+            >
+              <button
+                v-for="emoji in availableReactions"
+                :key="emoji"
+                @click="addReaction(index, emoji)"
+                class="reaction-button text-gray-600 hover:text-blue-500"
+              >
+                {{ emoji }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       <!-- Hiển thị danh sách avatar sau tin nhắn cuối cùng của bạn -->
@@ -640,8 +639,26 @@ export default {
   overflow: hidden;
 }
 
-.my-message .reaction-button-add-emoji{
+.my-message,
+.friend-message {
+  position: relative;
+  padding-bottom: 20px; /* Tạo khoảng trống cho nút dấu cộng */
+}
+/* Nút thêm reaction (dấu cộng) */
+.reaction-button-add-emoji {
+  position: absolute;
+  bottom: -12px; /* Căn dưới tin nhắn */
+  right: -12px; /* Căn phải tin nhắn */
+  width: 30px; /* Kích thước nút */
+  height: 30px;
+  background-color: #ffffff !important; /* Đảm bảo nền trắng */
+  border: 2px solid #d1e7ff; /* Viền xanh nhạt */
+  color: #007bff; /* Màu chữ xanh lam */
+  border-radius: 50%; /* Hình tròn */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15); /* Đổ bóng nhẹ */
   cursor: pointer;
+  transition: all 0.3s ease; /* Hiệu ứng hover */
+  z-index: 10; /* Luôn nằm trên nội dung tin nhắn */
 }
 
 .reactions {

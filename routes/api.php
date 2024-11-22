@@ -25,3 +25,4 @@ Route::put('change-request-friend/{id}', [ChatController::class, 'changeRequestF
 Route::get('get-request-friend', [ChatController::class, 'getRequestFriend'])->middleware('auth:api');
 Route::get('get-list-conversation', [ChatController::class, 'listConversation'])->middleware('auth:api');
 Route::get('get-detail-conversation', [ChatController::class, 'detailConversation'])->middleware('auth:api');
+Route::post('add-reaction', [ChatController::class, 'addReaction'])->middleware('auth:api');

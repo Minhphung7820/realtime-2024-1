@@ -54,7 +54,7 @@
               <button
                 v-for="emoji in availableReactions"
                 :key="emoji"
-                @click="addReaction(index, emoji)"
+                @click="addReaction(msg.id, emoji)"
                 class="reaction-button text-gray-600 hover:text-blue-500"
               >
                 {{ emoji }}
@@ -184,7 +184,7 @@ export default {
     this.socket.on('receive_message', async (e) => {
       if (parseInt(e.conversation_id) === parseInt(this.userInfo.conversation_id)) {
         const sender = parseInt(e.sender_id) === parseInt(this.$userProfile.id) ? 'me' : 'friend';
-        this.messages.unshift({ sender, content: e.content,sender_id:e.sender_id ,reactions : [],total_reactions : 0});
+        this.messages.unshift({ sender, content: e.content,sender_id:e.sender_id ,reactions : [],total_reactions : 0,id: e.message_id});
 
         // Cuộn xuống cuối và tự động kích hoạt trigger nếu cần
         await this.scrollToBottom();
@@ -205,6 +205,21 @@ export default {
       }
     });
 
+    this.socket.on('receive_reaction_message', async (e) => {
+      if (parseInt(e.conversation_id) === parseInt(this.userInfo.conversation_id)) {
+        const updatedMessage = this.messages.find((m) => parseInt(m.id) === parseInt(e.message_id));
+          if(updatedMessage){
+            const reaction = updatedMessage.reactions.find((r) => r.emoji === e.emoji);
+            if (reaction) {
+              reaction.count += 1; // Tăng count nếu reaction đã tồn tại
+            } else {
+              updatedMessage.reactions.push({ emoji:e.emoji, count: 1 }); // Thêm mới nếu chưa tồn tại
+            }
+            updatedMessage.total_reactions += 1; // Tăng tổng số reaction
+          }
+      }
+    });
+
     if (this.$refs.messageContent) {
       const messageContent = this.$refs.messageContent;
       messageContent.addEventListener('scroll', this.scrollToBottomWithTrigger);
@@ -220,9 +235,6 @@ export default {
             });
          }
     });
-    //
-    document.addEventListener('click', this.handleClickOutside);
-    //
     this.updateLastActiveFriendInterval = setInterval(() => {
         this.updateLastActiveFriendConversation();
     }, 1000);
@@ -233,7 +245,6 @@ export default {
     if(this.socket && this.userInfo.conversation_id){
       // this.socket.emit('leave_conversation', this.userInfo.conversation_id);
     }
-    document.removeEventListener('click', this.handleClickOutside);
     clearInterval(this.updateLastActiveFriendInterval);
   },
   watch: {
@@ -271,44 +282,28 @@ export default {
     },
   },
   methods: {
-    handleClickOutside(event) {
-      const messageBox = this.$el; // Lấy root element của component
-      if (!messageBox.contains(event.target)) {
-        // Nếu click bên ngoài component
-        this.messages.forEach((msg) => {
-          msg.isActive = false; // Ẩn dấu cộng
-          msg.showMenu = false; // Ẩn menu reaction
-        });
-      }
-    },
-    toggleActiveMessage(index) {
-      // Đặt tất cả tin nhắn khác thành không được chọn
-      this.messages.forEach((msg, i) => {
-        msg.isActive = i === index; // Chỉ đặt tin nhắn được click là active
-      });
-    },
-    toggleReactionMenu(messageIndex) {
-      this.messages.forEach((msg, index) => {
-        msg.showMenu = index === messageIndex ? !msg.showMenu : false; // Chỉ mở menu cho tin nhắn được nhấn
-      });
-    },
-    async addReaction(messageIndex, emoji) {
-      const messageId = this.messages[messageIndex].id;
+    async addReaction(messageId, emoji) {
       try {
-        // await this.$axios.post(`/api/add-reaction`, {
-        //   message_id: messageId,
-        //   emoji: emoji,
-        // });
-        // Cập nhật lại message với reaction mới
-        const updatedMessage = this.messages[messageIndex];
-        const reaction = updatedMessage.reactions.find((r) => r.emoji === emoji);
-        if (reaction) {
-          reaction.count += 1; // Tăng count nếu reaction đã tồn tại
-        } else {
-          updatedMessage.reactions.push({ emoji, count: 1 }); // Thêm mới nếu chưa tồn tại
-        }
-        updatedMessage.total_reactions += 1; // Tăng tổng số reaction
-        updatedMessage.showMenu = false; // Đóng menu sau khi thêm reaction
+        await this.$axios.post(`/api/add-reaction`, {
+          message_id: messageId,
+          emoji: emoji,
+        });
+        this.socket.emit(`reaction_message`,{
+           message_id : messageId,
+           responder_id : this.$userProfile.id,
+           emoji,
+           conversation_id : this.userInfo.conversation_id
+        });
+         const updatedMessage = this.messages.find((m) => parseInt(m.id) === parseInt(messageId));
+          if(updatedMessage){
+            const reaction = updatedMessage.reactions.find((r) => r.emoji === emoji);
+            if (reaction) {
+              reaction.count += 1; // Tăng count nếu reaction đã tồn tại
+            } else {
+              updatedMessage.reactions.push({ emoji, count: 1 }); // Thêm mới nếu chưa tồn tại
+            }
+            updatedMessage.total_reactions += 1; // Tăng tổng số reaction
+          }
       } catch (error) {
         console.error('Failed to add reaction:', error);
       }
@@ -437,12 +432,8 @@ export default {
         const id = this.dataMessage.id;
         const type = this.dataMessage.type;
         try {
-              const response = await this.$axios.get(`/api/get-message?id=${id}&type=${type}&limit=20`);
-              this.messages = response.data.data.map((msg) => ({
-                ...msg,
-                showMenu: false, // Menu emoji ban đầu ẩn
-                isActive: false, // Mặc định không được chọn
-              }));
+             const response = await this.$axios.get(`/api/get-message?id=${id}&type=${type}&limit=20`);
+             this.messages = response.data.data;
              this.viewers = response.data.viewers;
              this.scrollToBottom(); // Cuộn xuống cuối cùng
         } catch (error) {
@@ -454,7 +445,7 @@ export default {
    async sendMessage() {
       if (this.newMessage.trim() !== '') {
          try {
-             await this.$axios.post(`/api/save-message`,{
+            const response = await this.$axios.post(`/api/save-message`,{
                    conversation_id : this.userInfo.conversation_id,
                    content: this.newMessage,
                    type : 'text'
@@ -462,7 +453,8 @@ export default {
              this.socket.emit(`send_message`,{
                conversation_id : this.userInfo.conversation_id,
                sender_id : this.$userProfile.id,
-               content: this.newMessage
+               content: this.newMessage,
+               message_id : response.data.id
              });
              this.viewers = [];
              this.$emit('move-conv-to-top' , {id:this.userInfo.conversation_id,content : this.newMessage});

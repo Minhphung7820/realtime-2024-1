@@ -7,6 +7,7 @@ use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\Friendship;
 use App\Models\Message;
+use App\Models\Reaction;
 use App\Models\SeenMessage;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -416,6 +417,25 @@ class ChatController extends Controller
                         ->select('friendships.id', 'user_request.name', 'user_request.avatar')
                         ->orderBy('friendships.created_at', 'desc')
                         ->paginate($request['limit'] ?? 5));
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function addReaction(Request $request)
+    {
+        try {
+            return DB::transaction(function () use ($request) {
+                $userId = auth()->guard('api')->id();
+                return response()
+                    ->json(Reaction::create([
+                        'emoji' => $request['emoji'],
+                        'user_id' => $userId,
+                        'message_id' => $request['message_id']
+                    ]));
             });
         } catch (\Exception $e) {
             return response()->json([

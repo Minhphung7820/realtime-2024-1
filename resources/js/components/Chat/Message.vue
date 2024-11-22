@@ -697,18 +697,6 @@ export default {
   padding: 4px;
 }
 
-.reaction-button {
-  font-size: 1.5rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0 6px;
-}
-
-.reaction-button:hover {
-  transform: scale(1.2);
-}
-
 .emoji-menu .reaction-button {
   font-size: 1.25rem;
   margin: 0;
@@ -724,6 +712,7 @@ export default {
   left: 1.6rem;
   display: block;
 }
+
 .friend-message:hover .reaction-button-add-emoji{
   bottom: -12px; /* Căn dưới tin nhắn */
   left: -12px; /* Căn phải tin nhắn */

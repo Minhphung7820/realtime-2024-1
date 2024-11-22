@@ -46,7 +46,9 @@ export default {
   watch: {
     '$route.query.messages'(newQuery) {
       const decodedParams = decodeQueryParams(newQuery);
-      this.openChat(decodedParams.id,decodedParams.type)
+      if(decodedParams){
+        this.openChat(decodedParams.id,decodedParams.type)
+      }
     }
   },
   created(){

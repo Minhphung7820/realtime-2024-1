@@ -49,7 +49,7 @@
           <div class="reaction-picker hidden absolute">
             <!-- Menu emoji -->
             <div
-              class="emoji-menu bg-white border p-1 shadow-lg absolute bottom-full z-10 flex space-x-1"
+              class="emoji-menu bg-white rounded-full border p-1 shadow-lg absolute bottom-full z-10 flex space-x-1"
             >
               <button
                 v-for="emoji in availableReactions"

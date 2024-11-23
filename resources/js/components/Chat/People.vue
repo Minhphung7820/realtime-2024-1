@@ -66,18 +66,26 @@
           </div>
         </li>
       </ul>
-         <!-- Nút Xem thêm -->
-       <div class="text-center mt-4 center-button">
+       <!-- Nút Xem thêm -->
+      <div class="flex justify-center mt-4">
         <button
-              v-if="!isLoading && hasMoreFriend"
-              @click="loadMoreFriend"
-              :disabled="isLoadingMoreFriend"
-              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center relative"
-            >
-              <!-- Hiển thị vòng tròn xoay nếu đang tải -->
-              <span v-if="isLoadingMoreFriend" class="loader-friend w-5 h-5 border-2 border-t-2 border-white rounded-full animate-spin"></span>
-              <!-- Hiển thị "Xem thêm" nếu không tải -->
-              <span v-else>Xem thêm</span>
+          v-if="!isLoading && hasMoreFriend"
+          @click="loadMoreFriend"
+          :disabled="isLoadingMoreFriend"
+          class="see-more-btn flex items-center justify-center px-4 py-2 border border-gray-500 rounded-full hover:bg-gray-100 transition-colors"
+        >
+          <!-- Biểu tượng (icon) -->
+          <span v-if="!isLoadingMoreFriend" class="icon-container mr-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </span>
+
+          <!-- Vòng tròn xoay nếu đang tải -->
+          <span v-if="isLoadingMoreFriend" class="loader w-5 h-5 border-2 border-t-2 border-gray-500 rounded-full animate-spin"></span>
+
+          <!-- Text -->
+          <span v-else>Xem thêm</span>
         </button>
       </div>
     </div>
@@ -529,16 +537,33 @@ export default {
     transform: rotate(360deg);
   }
 }
-
-.loader-friend {
-  border-top-color: transparent;
-  border-right-color: white;
-  border-bottom-color: white;
-  border-left-color: white;
+/* CSS button see more */
+.see-more-btn {
+  background-color: white; /* Nền trắng */
+  color: black; /* Màu chữ đen */
+  border: 1px solid #d1d5db; /* Viền xám nhạt */
+  font-size: 16px; /* Kích thước chữ */
+  cursor: pointer;
 }
+
+.see-more-btn:hover {
+  background-color: #f3f4f6; /* Màu nền khi hover */
+}
+
+.see-more-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Vòng tròn xoay */
+.loader {
+  border-top-color: transparent;
+}
+
 .animate-spin {
   animation: spin 1s linear infinite;
 }
+
 @keyframes spin {
   0% {
     transform: rotate(0deg);
@@ -547,10 +572,5 @@ export default {
     transform: rotate(360deg);
   }
 }
-
-.center-button {
-  display: flex;
-  justify-content: center;
-  margin-top: 16px; /* Tùy chỉnh khoảng cách */
-}
+/*END CSS button see more */
 </style>

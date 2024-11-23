@@ -36,7 +36,7 @@ if (token) {
         const userID = getProfile.data.id;
         userProfile = getProfile.data;
         // Khởi tạo socket khi user đã đăng nhập
-        socket = initializeSocket(userID);
+        socket = initializeSocket(userID, { token });
         app.provide('$socket', socket);
     } catch (error) {
         console.error("Failed to load profile:", error);

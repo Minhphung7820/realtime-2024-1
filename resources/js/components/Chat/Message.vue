@@ -290,6 +290,13 @@ export default {
           await this.getMessage();
           this.socket.emit('join_conversation', this.userInfo.conversation_id);
           this.isLoading = false;
+          // đăng ký lại sự kiện khi chuyển component
+          this.$nextTick(() => {
+            const messageContent = this.$el.querySelector('.message-content');
+            if (messageContent) {
+              this.scrollToBottomWithTrigger();
+            }
+          });
       },
     },
   },
@@ -410,9 +417,8 @@ export default {
         }
         this.isDataUserOnlineFetching = true;
         try {
-          const response = await this.$axios.get(`http://localhost:6060/api/online-users`);
-          const onlineUsers = response.data.data;
-          this.userInfo.isOnline = onlineUsers.some(item => parseInt(item.userID) === parseInt(this.userInfo.id));
+          const response = await this.$axios.get(`http://localhost:6060/api/is-active?userID=${this.userInfo.id}`);
+          this.userInfo.isOnline = response.data.isActive;
         } catch (error) {
           console.error('Failed to fetch online users:', error);
         } finally{

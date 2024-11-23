@@ -18,7 +18,7 @@ class ChatController extends Controller
     public function getPeople(Request $request)
     {
         $userId = auth()->guard('api')->id();
-
+        $origin = $request->header('Origin');
         $people = DB::table('friendships')
             ->join('users', function ($join) use ($userId) {
                 $join->on('friendships.user_id', '=', 'users.id')
@@ -30,12 +30,16 @@ class ChatController extends Controller
             })
             ->where('friendships.status', 'accepted')
             ->where('users.id', '!=', $userId) // Loại bỏ chính user khỏi danh sách
-            ->select('users.*')
-            ->paginate($request['limit'] ?? 10);
+            ->select('users.*');
+        if ($origin === 'http://localhost:6060') {
+            $data = $people->pluck('users.id');
+        } else {
+            $data = $people->paginate($request['limit'] ?? 10);
+        }
 
         return response()
             ->json(
-                $people
+                $data
             );
     }
 

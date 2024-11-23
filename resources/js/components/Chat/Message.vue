@@ -444,7 +444,7 @@ export default {
           this.isLoadingMore = false;
         });
         // đang scroll chỗ nào giữ nguyên vị trí đó
-        messageContent.scrollTop = oldScrollTop - messageContent.clientHeight;
+        messageContent.scrollTop = oldScrollTop;
       }
     },
     async scrollToBottom() {

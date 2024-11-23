@@ -27,7 +27,10 @@
   </div>
   <!-- Phần tin nhắn (có cuộn) -->
   <div v-else ref="messageContent" class="message-content flex-1 overflow-y-auto p-2">
-    <div v-for="(msg, index) in messages" :key="index" class="mb-2">
+    <div v-if="isLoadingMore" class="text-center text-gray-500 py-2 is-loading-more-message">
+     Đang tải thêm tin nhắn...
+    </div>
+    <div v-for="(msg, index) in messages" :key="index" class="mb-2 each-message">
       <div :class="msg.sender === 'me' ? 'my-message-container' : 'friend-message-container'">
         <div :class="msg.sender === 'me' ? 'my-message relative group' : 'friend-message relative group'">
           <p>{{ msg.content }}</p>
@@ -169,7 +172,11 @@ export default {
       isFriendTyping : false, // Trạng thái đang gõ
       isFriendTypingTimer : null,
       isLoading : true,
-      socket :null
+      socket :null,
+      currentPage: 1, // Trang hiện tại
+      totalPages: 0, // Tổng số trang
+      isLoadingMore: false, // Đang tải thêm tin nhắn hay không
+      hasMoreMessages: true, // Còn tin nhắn để tải hay không
     };
   },
   async mounted(){
@@ -190,6 +197,10 @@ export default {
         await this.scrollToBottom();
       }
     });
+
+    if (this.$refs.messageContent) {
+        this.$refs.messageContent.addEventListener('scroll', this.handleScroll);
+    }
 
     this.socket.on('typing', (e) => {
       if (parseInt(e.conversation_id) === parseInt(this.userInfo.conversation_id)) {
@@ -244,6 +255,10 @@ export default {
     // Dừng interval khi component bị hủy
     if(this.socket && this.userInfo.conversation_id){
       // this.socket.emit('leave_conversation', this.userInfo.conversation_id);
+    }
+
+    if (this.$refs.messageContent) {
+        this.$refs.messageContent.removeEventListener('scroll', this.handleScroll);
     }
     clearInterval(this.updateLastActiveFriendInterval);
   },
@@ -414,6 +429,22 @@ export default {
           this.userInfo.lastOnlineString = formatTimeDifference(user.last_active);
         }
     },
+    handleScroll() {
+      const messageContent = this.$refs.messageContent;
+
+      if (
+        messageContent.scrollTop === 0 && // Khi cuộn lên đầu
+        this.hasMoreMessages && // Nếu vẫn còn tin nhắn để tải
+        !this.isLoadingMore // Đảm bảo không bị tải nhiều lần cùng lúc
+      ) {
+        this.isLoadingMore = true;
+
+        // Tải thêm tin nhắn
+        this.getMessage(this.currentPage + 1).finally(() => {
+          this.isLoadingMore = false;
+        });
+      }
+    },
     async scrollToBottom() {
       await this.$nextTick(); // Đảm bảo DOM đã được render trước khi thực hiện
       const messageContent = this.$refs.messageContent;
@@ -424,7 +455,7 @@ export default {
         console.warn('messageContent is not available yet.');
       }
     },
-    async getMessage(){
+    async getMessage(page = 1){
         if(this.isDataMessageFetching){
           return ;
         }
@@ -432,8 +463,19 @@ export default {
         const id = this.dataMessage.id;
         const type = this.dataMessage.type;
         try {
-             const response = await this.$axios.get(`/api/get-message?id=${id}&type=${type}&limit=20`);
-             this.messages = response.data.data;
+             const response = await this.$axios.get(`/api/get-message?id=${id}&type=${type}&limit=20&page=${page}`);
+             const { data, current_page, last_page, total } = response.data; // Lấy trực tiếp từ root
+             if (page === 1) {
+                this.messages = data; // Lấy tin nhắn mới nhất
+             } else {
+                this.messages = [...this.messages, ...data]; // Thêm tin nhắn cũ vào
+             }
+             // Cập nhật trạng thái phân trang
+             this.currentPage = current_page;
+             this.totalPages = last_page;
+             this.totalMessages = total;
+             this.hasMoreMessages = current_page < last_page;
+             //
              this.viewers = response.data.viewers;
              this.scrollToBottom(); // Cuộn xuống cuối cùng
         } catch (error) {
@@ -497,6 +539,13 @@ export default {
   scrollbar-width: none; /* Ẩn thanh cuộn trên Firefox */
   display: flex;
   flex-direction: column-reverse; /* Đảo ngược thứ tự hiển thị */
+}
+
+.message-content .is-loading-more-message{
+  order: -1 !important;
+}
+.message-content .each-message{
+ order: 0  !important;
 }
 
 .loading-container {

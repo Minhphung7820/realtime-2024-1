@@ -150,13 +150,7 @@ export default {
     return {
       showEmojiPicker: false,
       availableReactions: ['👍', '❤️', '😂', '😮', '😢', '😡'],
-      viewers: [
-      // {
-      //   id: 1,
-      //   name: 'John Doe',
-      //   avatar: 'https://i.pravatar.cc/50?img=1' // URL mẫu cho avatar
-      // }
-      ],
+      viewers: [],
       userInfo: {
         id : null,
         name: '', // Tên người dùng

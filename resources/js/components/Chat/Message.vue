@@ -26,10 +26,10 @@
       <div class="spinner"></div>
   </div>
   <!-- Phần tin nhắn (có cuộn) -->
-  <div v-else ref="messageContent" class="message-content flex-1 overflow-y-auto p-2">
-    <div v-if="isLoadingMore" class="text-center text-gray-500 py-2 is-loading-more-message">
+          <!-- <div v-if="isLoadingMore" class="text-center text-gray-500 py-2 is-loading-more-message">
      Đang tải thêm tin nhắn...
-    </div>
+    </div> -->
+  <div v-else ref="messageContent" class="message-content flex-1 overflow-y-auto p-2">
     <div v-for="(msg, index) in messages" :key="index" class="mb-2 each-message">
       <div :class="msg.sender === 'me' ? 'my-message-container' : 'friend-message-container'">
         <div :class="msg.sender === 'me' ? 'my-message relative group' : 'friend-message relative group'">
@@ -284,7 +284,11 @@ export default {
             isOnline: false,
             lastOnline: '',
             lastOnlineString: '',
-            conversation_id : null
+            conversation_id : null,
+            currentPage: 1, // Trang hiện tại
+            totalPages: 0, // Tổng số trang
+            isLoadingMore: false, // Đang tải thêm tin nhắn hay không
+            hasMoreMessages: true, // Còn tin nhắn để tải hay không
           };
           this.socket = this.$socket;
           await this.findConversation();
@@ -292,7 +296,6 @@ export default {
           await this.getMessage();
           this.socket.emit('join_conversation', this.userInfo.conversation_id);
           this.isLoading = false;
-          this.scrollToBottom();
       },
     },
   },
@@ -431,18 +434,23 @@ export default {
     },
     handleScroll() {
       const messageContent = this.$refs.messageContent;
+      if(!messageContent) return;
+      const isAtTop = Math.ceil(-(messageContent.scrollTop) + messageContent.clientHeight) >= messageContent.scrollHeight;
 
       if (
-        messageContent.scrollTop === 0 && // Khi cuộn lên đầu
+        isAtTop // Khi cuộn lên đầu
+         &&
         this.hasMoreMessages && // Nếu vẫn còn tin nhắn để tải
         !this.isLoadingMore // Đảm bảo không bị tải nhiều lần cùng lúc
       ) {
         this.isLoadingMore = true;
-
+        const oldScrollTop = messageContent.scrollTop;
         // Tải thêm tin nhắn
         this.getMessage(this.currentPage + 1).finally(() => {
           this.isLoadingMore = false;
         });
+        // đang scroll chỗ nào giữ nguyên vị trí đó
+        messageContent.scrollTop = oldScrollTop - messageContent.clientHeight;
       }
     },
     async scrollToBottom() {
@@ -476,8 +484,10 @@ export default {
              this.totalMessages = total;
              this.hasMoreMessages = current_page < last_page;
              //
-             this.viewers = response.data.viewers;
-             this.scrollToBottom(); // Cuộn xuống cuối cùng
+             if(page === 1){
+              this.viewers = response.data.viewers;
+              this.scrollToBottom(); // Cuộn xuống cuối cùng
+             }
         } catch (error) {
              console.log("Get Failed With Message :".error);
         } finally{
@@ -545,7 +555,7 @@ export default {
   order: -1 !important;
 }
 .message-content .each-message{
- order: 0  !important;
+   order: 0  !important;
 }
 
 .loading-container {

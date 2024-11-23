@@ -52,7 +52,7 @@
 
 <script>
 export default {
-  inject: ['$axios', '$socket'],
+  inject: ['$axios', '$socket','$userProfile'],
   data() {
     return {
       user: {
@@ -67,8 +67,8 @@ export default {
   async created() {
     this.isLoading = true;
     try {
-      const response = await this.$axios.get('/api/get-profile');
-      this.user = { ...response.data, isOnline: true }; // Giả lập trạng thái trực tuyến
+      const response = this.$userProfile;
+      this.user = { ...response, isOnline: true }; // Giả lập trạng thái trực tuyến
     } catch (error) {
       console.error('Failed to load profile:', error);
     } finally {

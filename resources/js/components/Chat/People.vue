@@ -188,6 +188,7 @@
 </template>
 
 <script>
+import { onlineStore } from "../../stores/UserOnline.js";
 import {formatTimeDifference,encodeQueryParams} from '../../utils/functions.js';
 import { UserPlusIcon,UsersIcon,UserGroupIcon } from '@heroicons/vue/24/solid';
 
@@ -213,6 +214,12 @@ export default {
     };
   },
   computed: {
+    onlineStoreData() {
+      return onlineStore().data;
+    },
+    onlineStoreLoading() {
+      return onlineStore().isLoading; // Trạng thái đang tải
+    },
     tabTitle() {
       switch (this.activeTab) {
         case 'friends':
@@ -270,8 +277,7 @@ export default {
         //
         const { data, current_page, last_page, total } = peopleResponse.data;
         //
-        const onlineUsersResponse = await this.$axios.get('http://localhost:6060/api/online-users');
-        const onlineUsers = onlineUsersResponse.data.data;
+        const onlineUsers = this.onlineStoreData.data;
         // Các người dùng còn lại không có last_active_string
         if(page === 1){
           this.people = data.map((person, index) => {

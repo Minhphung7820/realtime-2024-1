@@ -56,6 +56,7 @@
 </template>
 
 <script>
+import { onlineStore } from "../../stores/UserOnline.js";
 import {encodeQueryParams} from '../../utils/functions.js';
 
 export default {
@@ -132,6 +133,14 @@ export default {
    //
     this.isLoading = false;
   },
+  computed:{
+    onlineStoreData() {
+      return onlineStore().data;
+    },
+    onlineStoreLoading() {
+      return onlineStore().isLoading; // Trạng thái đang tải
+    },
+  },
   methods: {
     resetUnread(data)
     {
@@ -185,8 +194,7 @@ export default {
         this.conversations = conversationResponse.data;
 
         // Lấy danh sách người dùng online
-        const onlineUsersResponse = await this.$axios.get('http://localhost:6060/api/online-users');
-        const onlineUsers = onlineUsersResponse.data.data;
+        const onlineUsers = this.onlineStoreData.data;
 
         // Cập nhật trạng thái online vào mảng conversations
         onlineUsers.forEach(user => {

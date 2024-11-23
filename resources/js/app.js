@@ -1,5 +1,6 @@
 import { createApp } from 'vue';
 import App from './App.vue';
+import { createPinia } from 'pinia';
 import router from './router';
 import './bootstrap';
 import '../css/global.css';
@@ -26,6 +27,7 @@ axiosInstance.interceptors.request.use(config => {
 
 
 const app = createApp(App);
+const pinia = createPinia();
 // Kiểm tra xem người dùng đã đăng nhập chưa
 const token = localStorage.getItem('token');
 let socket;
@@ -67,5 +69,6 @@ app.provide('$axios', axiosInstance);
 app.provide('$userProfile', userProfile);
 app.provide('$socket', socket);
 app.use(router);
+app.use(pinia)
 app.use(CkeditorPlugin);
 app.mount('#app');

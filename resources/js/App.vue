@@ -14,6 +14,7 @@
 </template>
 
 <script>
+import { onlineStore } from "./stores/UserOnline.js"; // Đường dẫn tới store của bạn
 export default {
     name: 'App',
     data() {
@@ -21,9 +22,12 @@ export default {
             isAuthenticated: false
         };
     },
-    created() {
+    async created() {
         // Kiểm tra token khi component được khởi tạo
         this.checkAuthentication();
+        // Gọi store để fetch dữ liệu
+        const store = onlineStore();
+        await store.fetchData(); // Gọi action fetchData từ store
     },
     watch: {
         '$route'() {

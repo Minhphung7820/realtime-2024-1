@@ -29,7 +29,7 @@
           <!-- <div v-if="isLoadingMore" class="text-center text-gray-500 py-2 is-loading-more-message">
      Đang tải thêm tin nhắn...
     </div> -->
-  <div v-else ref="messageContent" class="message-content flex-1 overflow-y-auto p-2">
+  <div v-else ref="messageContent" @scroll="scrollLoadMoreMessage" class="message-content flex-1 overflow-y-auto p-2">
     <div v-for="(msg, index) in messages" :key="index" class="mb-2 each-message">
       <div :class="msg.sender === 'me' ? 'my-message-container' : 'friend-message-container'">
         <div :class="msg.sender === 'me' ? 'my-message relative group' : 'friend-message relative group'">

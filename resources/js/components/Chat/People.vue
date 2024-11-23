@@ -66,6 +66,20 @@
           </div>
         </li>
       </ul>
+         <!-- Nút Xem thêm -->
+       <div class="text-center mt-4 center-button">
+        <button
+              v-if="!isLoading && hasMoreFriend"
+              @click="loadMoreFriend"
+              :disabled="isLoadingMoreFriend"
+              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center relative"
+            >
+              <!-- Hiển thị vòng tròn xoay nếu đang tải -->
+              <span v-if="isLoadingMoreFriend" class="loader-friend w-5 h-5 border-2 border-t-2 border-white rounded-full animate-spin"></span>
+              <!-- Hiển thị "Xem thêm" nếu không tải -->
+              <span v-else>Xem thêm</span>
+        </button>
+      </div>
     </div>
 
     <div v-else-if="activeTab === 'requests'">
@@ -183,7 +197,11 @@ export default {
       friendRequests:[], // Danh sách yêu cầu kết bạn (mẫu)
       searchQuery: '', // Dữ liệu input tìm kiếm
       searchResults:[], // Kết quả tìm kiếm (mẫu)
-      countRequestFriend : 0
+      countRequestFriend : 0,
+      currentPageFriend: 1, // Trang hiện tại
+      totalPagesFriend: 0, // Tổng số trang
+      isLoadingMoreFriend: false, // Đang tải thêm tin nhắn hay không
+      hasMoreFriend: true, // Còn tin nhắn để tải hay không
     };
   },
   computed: {
@@ -228,37 +246,52 @@ export default {
     clearInterval(this.updateLastActiveInterval);
   },
   methods: {
-    async fetchPeopleWithStatus() {
+    loadMoreFriend(){
+     if(!this.isLoadingMoreFriend){
+          this.isLoadingMoreFriend = true;
+          this.fetchPeopleWithStatus(this.currentPageFriend + 1).finally(() => {
+          this.isLoadingMoreFriend = false;
+        });
+     }
+    },
+    async fetchPeopleWithStatus(page = 1) {
       try {
         // Gọi API để lấy danh sách người dùng
         const limitPeople = 10;
-        const peopleResponse = await this.$axios.get(`/api/get-people?limit=${limitPeople}`);
+        const peopleResponse = await this.$axios.get(`/api/get-people?limit=${limitPeople}&page=${page}`);
+        //
+        const { data, current_page, last_page, total } = peopleResponse.data;
+        //
         const onlineUsersResponse = await this.$axios.get('http://localhost:6060/api/online-users');
         const onlineUsers = onlineUsersResponse.data.data;
-        // Chỉ xử lý last_active_string cho 10 người đầu tiên
-        const firstTenPeople = peopleResponse.data.data.slice(0, 10).map(person => {
-        const isOnlineUser = onlineUsers.find(user => parseInt(user.userID) === parseInt(person.id));
-          return {
-            ...person,
-            isOnline: !!isOnlineUser, // Kiểm tra nếu có trong danh sách online
-            last_active_string: person.last_active
-              ? formatTimeDifference(person.last_active)
-              : null,
-          };
-        });
-
         // Các người dùng còn lại không có last_active_string
-        const remainingPeople = peopleResponse.data.data.slice(10).map(person => {
-          const isOnlineUser = onlineUsers.find(user => user.userID === person.id);
+        if(page === 1){
+          this.people = data.map((person, index) => {
+          const isOnlineUser = onlineUsers.find(user => parseInt(user.userID) === parseInt(person.id));
           return {
             ...person,
-            isOnline: !!isOnlineUser, // Kiểm tra nếu có trong danh sách online
-            last_active_string: null, // Không có giá trị
+            isOnline: !!isOnlineUser,
+            last_active_string: index < 9 ? (person.last_active
+              ? formatTimeDifference(person.last_active)
+              : null) : null,
           };
         });
-
+        }else{
+          this.people = [...this.people, ...data].map((person, index) => {
+          const isOnlineUser = onlineUsers.find(user => parseInt(user.userID) === parseInt(person.id));
+          return {
+            ...person,
+            isOnline: !!isOnlineUser,
+            last_active_string: index < 9 ? (person.last_active
+              ? formatTimeDifference(person.last_active)
+              : null) : null,
+          };
+        });
+        }
+        //
+        this.currentPageFriend = current_page,
+        this.hasMoreFriend= current_page < last_page
         // Kết hợp danh sách
-        this.people = [...firstTenPeople, ...remainingPeople];
       } catch (error) {
         console.error('Failed to fetch people or online users:', error);
       }
@@ -497,4 +530,27 @@ export default {
   }
 }
 
+.loader-friend {
+  border-top-color: transparent;
+  border-right-color: white;
+  border-bottom-color: white;
+  border-left-color: white;
+}
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.center-button {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px; /* Tùy chỉnh khoảng cách */
+}
 </style>

@@ -193,7 +193,7 @@ export default {
     });
 
     if (this.$refs.messageContent) {
-        this.$refs.messageContent.addEventListener('scroll', this.handleScroll);
+        this.$refs.messageContent.addEventListener('scroll', this.scrollLoadMoreMessage);
     }
 
     this.socket.on('typing', (e) => {
@@ -252,7 +252,7 @@ export default {
     }
 
     if (this.$refs.messageContent) {
-        this.$refs.messageContent.removeEventListener('scroll', this.handleScroll);
+        this.$refs.messageContent.removeEventListener('scroll', this.scrollLoadMoreMessage);
     }
     clearInterval(this.updateLastActiveFriendInterval);
   },
@@ -426,7 +426,7 @@ export default {
           this.userInfo.lastOnlineString = formatTimeDifference(user.last_active);
         }
     },
-    handleScroll() {
+    scrollLoadMoreMessage() {
       const messageContent = this.$refs.messageContent;
       if(!messageContent) return;
       const isAtTop = Math.ceil(-(messageContent.scrollTop) + messageContent.clientHeight) >= messageContent.scrollHeight;

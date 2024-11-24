@@ -41,6 +41,9 @@
               <span v-if="!conversation.lastMessage" class="font-bold">
                 Bắt đầu trò chuyện nào!
               </span>
+              <span style="gap:5px;" class="flex text-red-500" v-else-if="conversation.lastMessage === 'Không thể giải mã!'">
+                {{ conversation.lastMessage }} <ExclamationCircleIcon class="h-6 w-6 text-red-500" />
+              </span>
               <span v-else>
                 <strong v-if="conversation.sender === 'me'">Bạn:</strong> {{ conversation.lastMessage }}
               </span>
@@ -58,12 +61,16 @@
 <script>
 import { onlineStore } from "../../stores/UserOnline.js";
 import {encodeQueryParams} from '../../utils/functions.js';
+import { ExclamationCircleIcon } from '@heroicons/vue/24/solid';
 import {
     importPrivateKey,
     decryptMessageWithPrivateKey
 } from "../../utils/functions.js"
 export default {
   inject: ['$axios','$userProfile','$socket'],
+  components: {
+     ExclamationCircleIcon,
+  },
   props:{
      dataMoveConvToTop:{
         type: Object,
@@ -205,7 +212,6 @@ export default {
     },
     async getConversations() {
       try {
-        // Lấy danh sách các cuộc trò chuyện
         const conversationResponse = await this.$axios.get(`/api/get-list-conversation`);
 
         const decryptedConversation = await Promise.all(
@@ -213,27 +219,26 @@ export default {
             if (conversation.type === "private") {
               let lastMessageDecrypt;
               try {
-                const encryptedContent = JSON.parse(conversation.lastMessage)[this.$userProfile.id]; // Giải mã field content
+                if (conversation.lastMessage) {
+                  const encryptedContent = JSON.parse(conversation.lastMessage)[this.$userProfile.id];
                   if (encryptedContent) {
-                    const privateKey = await importPrivateKey(
-                      localStorage.getItem("privateKey")
-                    );
+                    const privateKey = await importPrivateKey(localStorage.getItem("privateKey"));
                     const decryptedLastMessage = await decryptMessageWithPrivateKey(
                       encryptedContent,
                       privateKey
                     );
                     lastMessageDecrypt = decryptedLastMessage;
                   }
-                  return {
-                    ...conversation,
-                    lastMessage: lastMessageDecrypt,
-                  };
+                } else {
+                  lastMessageDecrypt = null; // Không có tin nhắn cuối
+                }
               } catch (error) {
-                lastMessageDecrypt =  "Không thể giải mã!";
+                lastMessageDecrypt = "Không thể giải mã!"; // Lỗi giải mã
               }
+
               return {
                 ...conversation,
-                lastMessage: lastMessageDecrypt, // Hiển thị thông báo nếu giải mã thất bại
+                lastMessage: lastMessageDecrypt,
               };
             }
             if (conversation.type === "group") {
@@ -246,19 +251,19 @@ export default {
 
         this.conversations = decryptedConversation;
 
-        // Lấy danh sách người dùng online
+        // Cập nhật trạng thái online
         const onlineUsers = this.onlineStoreData.data;
-
-        // Cập nhật trạng thái online vào mảng conversations
-        onlineUsers.forEach(user => {
-          const matchingPerson = this.conversations.find(person => parseInt(person.id) === parseInt(user.userID)
-          && person.type === 'private');
+        onlineUsers.forEach((user) => {
+          const matchingPerson = this.conversations.find(
+            (person) =>
+              parseInt(person.id) === parseInt(user.userID) && person.type === "private"
+          );
           if (matchingPerson) {
             matchingPerson.isOnline = user.isOnline;
           }
         });
       } catch (error) {
-        console.error('Failed to fetch conversations and users:', error);
+        console.error("Failed to fetch conversations and users:", error);
       }
     },
     handleUserWithStatus(user) {

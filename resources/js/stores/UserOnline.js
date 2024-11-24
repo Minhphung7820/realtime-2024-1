@@ -10,8 +10,8 @@ export const onlineStore = defineStore('sharedData', {
     }),
 
     actions: {
-        async fetchData() {
-            if (this.data) return; // Nếu đã có dữ liệu, không gọi lại API
+        async fetchData(important = false) {
+            if (this.data && !important) return; // Nếu đã có dữ liệu, không gọi lại API
 
             this.isLoading = true;
             this.error = null;

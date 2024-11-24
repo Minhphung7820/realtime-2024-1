@@ -106,8 +106,9 @@ export default {
       this.socket.emit('join_conversation', convo.conversation_id); // Join tất cả các phòng của user
    });
 
-  this.socket.on(`receive_noti_change_friend_request`, (e) => {
+  this.socket.on(`receive_noti_change_friend_request`,async (e) => {
     if (e.status === 'accepted') {
+         await onlineStore().fetchData(true);
          this.getConversations();
          this.socket.emit('join_conversation', e.conversation_id);
     }
@@ -181,6 +182,7 @@ export default {
           // Đảm bảo reactivity để Vue trigger lại hiệu ứng
           this.conversations = [...this.conversations];
         }else{
+          await onlineStore().fetchData(true);
           await this.getConversations();
           this.socket.emit('join_conversation', objectConv.id);
           this.conversations = [...this.conversations];

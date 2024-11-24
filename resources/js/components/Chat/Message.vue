@@ -580,7 +580,6 @@ export default {
                           [this.userInfo.id]: receiverEncryptedMessage,
                         };
 
-                        console.log("Encrypted message:", messageSend);
                     } catch (encryptionError) {
                         console.error("Error during encryption:", encryptionError);
                         throw encryptionError; // Ném lỗi để xử lý bên dưới
@@ -588,8 +587,6 @@ export default {
                 } else {
                     messageSend = this.newMessage;
                 }
-
-                console.log("Final messageSend:", messageSend);
 
                 const response = await this.$axios.post(`/api/save-message`, {
                     conversation_id: this.userInfo.conversation_id,

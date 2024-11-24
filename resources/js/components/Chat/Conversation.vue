@@ -209,9 +209,9 @@ export default {
         const decryptedConversation = await Promise.all(
           conversationResponse.data.map(async (conversation) => {
             if (conversation.type === "private") {
+              let lastMessageDecrypt;
               try {
                 const encryptedContent = JSON.parse(conversation.lastMessage)[this.$userProfile.id]; // Giải mã field content
-                let lastMessageDecrypt;
                   if (encryptedContent) {
                     const privateKey = await importPrivateKey(
                       localStorage.getItem("privateKey")
@@ -222,19 +222,22 @@ export default {
                     );
                     lastMessageDecrypt = decryptedLastMessage;
                   }
+                  if(!encryptedContent){
+                     lastMessageDecrypt =  "Không thể giải mã!";
+                  }
                   return {
                     ...conversation,
-                    lastMessage: !encryptedContent ? null : lastMessageDecrypt,
+                    lastMessage: lastMessageDecrypt,
                   };
               } catch (error) {
                 console.error("Decryption failed for convesation ID:", conversation.id, error);
               }
               return {
                 ...conversation,
-                lastMessage: "Không thể giải mã", // Hiển thị thông báo nếu giải mã thất bại
+                lastMessage: lastMessageDecrypt, // Hiển thị thông báo nếu giải mã thất bại
               };
             }
-            if (conversation.type === "private") {
+            if (conversation.type === "group") {
               return {
                 ...conversation,
               };
@@ -249,7 +252,7 @@ export default {
 
         // Cập nhật trạng thái online vào mảng conversations
         onlineUsers.forEach(user => {
-          const matchingPerson = this.conversations.find(person => person.id === parseInt(user.userID)
+          const matchingPerson = this.conversations.find(person => parseInt(person.id) === parseInt(user.userID)
           && person.type === 'private');
           if (matchingPerson) {
             matchingPerson.isOnline = user.isOnline;
@@ -260,7 +263,7 @@ export default {
       }
     },
     handleUserWithStatus(user) {
-      const matchingPerson = this.conversations.find(person => person.id === parseInt(user.userID)
+      const matchingPerson = this.conversations.find(person => parseInt(person.id) === parseInt(user.userID)
       && person.type ==='private');
       if (matchingPerson) {
         matchingPerson.isOnline = user.online;

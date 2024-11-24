@@ -505,40 +505,41 @@ export default {
         const { data, current_page, last_page, total } = response.data;
 
         // Giải mã tin nhắn ngay khi nhận được từ server
+        let dataConverted = data;
+        if (type === "private") {
         const decryptedMessages = await Promise.all(
-          data.map(async (message) => {
-            if (type === "private") {
-              try {
-                const encryptedContent = message.content[this.$userProfile.id]; // Giải mã field content
-                if (encryptedContent) {
-                  const privateKey = await importPrivateKey(
-                    localStorage.getItem("privateKey")
-                  );
-                  const decryptedContent = await decryptMessageWithPrivateKey(
-                    encryptedContent,
-                    privateKey
-                  );
-                  return {
-                    ...message,
-                    content: decryptedContent,
-                  };
+            data.map(async (message) => {
+                try {
+                  const encryptedContent = message.content[this.$userProfile.id]; // Giải mã field content
+                  if (encryptedContent) {
+                    const privateKey = await importPrivateKey(
+                      localStorage.getItem("privateKey")
+                    );
+                    const decryptedContent = await decryptMessageWithPrivateKey(
+                      encryptedContent,
+                      privateKey
+                    );
+                    return {
+                      ...message,
+                      content: decryptedContent,
+                    };
+                  }
+                } catch (error) {
+                  console.error("Decryption failed for message ID:", message.id, error);
                 }
-              } catch (error) {
-                console.error("Decryption failed for message ID:", message.id, error);
-              }
-            }
-            return {
-              ...message,
-              content: "Không thể giải mã", // Hiển thị thông báo nếu giải mã thất bại
-            };
-          })
-        );
-
+              return {
+                ...message,
+                content: "Không thể giải mã", // Hiển thị thông báo nếu giải mã thất bại
+              };
+            })
+          );
+          dataConverted = decryptedMessages;
+        }
         // Cập nhật danh sách tin nhắn
         if (page === 1) {
-          this.messages = decryptedMessages; // Lấy tin nhắn mới nhất
+          this.messages = dataConverted; // Lấy tin nhắn mới nhất
         } else {
-          this.messages = [...this.messages, ...decryptedMessages]; // Thêm tin nhắn cũ vào
+          this.messages = [...this.messages, ...dataConverted]; // Thêm tin nhắn cũ vào
         }
 
         // Cập nhật trạng thái phân trang

@@ -222,15 +222,12 @@ export default {
                     );
                     lastMessageDecrypt = decryptedLastMessage;
                   }
-                  if(!encryptedContent){
-                     lastMessageDecrypt =  "Không thể giải mã!";
-                  }
                   return {
                     ...conversation,
                     lastMessage: lastMessageDecrypt,
                   };
               } catch (error) {
-                console.error("Decryption failed for convesation ID:", conversation.id, error);
+                lastMessageDecrypt =  "Không thể giải mã!";
               }
               return {
                 ...conversation,

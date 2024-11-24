@@ -82,103 +82,12 @@ export default {
         // Kiểm tra token khi component được khởi tạo
         this.checkAuthentication();
         if(this.isAuthenticated){
-            // Gọi store để fetch dữ liệu
+        // Gọi store để fetch dữ liệu
         const store = onlineStore();
         await store.fetchData(); // Gọi action fetchData từ store
         //
         await this.init();
         }
-        // Tạo cặp khóa cho User 1 và User 2
-        const gen1 = await generateKeyPair();
-        const user_1 = {
-            privateKey: gen1.privateKey,
-            publicKey: gen1.publicKey,
-        };
-
-        const gen2 = await generateKeyPair();
-        const user_2 = {
-            privateKey: gen2.privateKey,
-            publicKey: gen2.publicKey,
-        };
-
-        const message = "Xin chào bạn 👍";
-
-        // Import public key từ Base64 về CryptoKey
-        const user1PublicKey = await importPublicKey(user_1.publicKey);
-        const user2PublicKey = await importPublicKey(user_2.publicKey);
-
-        // Import private key từ Base64 về CryptoKey
-        const user1PrivateKey = await importPrivateKey(user_1.privateKey);
-        const user2PrivateKey = await importPrivateKey(user_2.privateKey);
-
-        // Mã hóa tin nhắn bằng public key
-        const messageSending = {
-            user_1: await encryptMessageWithPublicKey(message, user1PublicKey),
-            user_2: await encryptMessageWithPublicKey(message, user2PublicKey),
-        };
-
-        // Giải mã tin nhắn
-        const decryptedMessageUser1 = await decryptMessageWithPrivateKey(
-            messageSending.user_1,
-            user1PrivateKey
-        );
-        const decryptedMessageUser2 = await decryptMessageWithPrivateKey(
-            messageSending.user_2,
-            user2PrivateKey
-        );
-
-        // const deviceId = generateDeviceId();
-        // console.log(deviceId);
-
-        // console.log("Người 1 giải mã tin nhắn:", decryptedMessageUser1);
-        // console.log("Người 2 giải mã tin nhắn:", decryptedMessageUser2);
-
-        // Xuất private key về Base64
-        // const user1PrivateKeyBase64 = await exportPrivateKey(user1PrivateKey);
-        // console.log("Private key before encryption:", user1PrivateKeyBase64);
-    //    const masterkey = generateMasterKey();
-    //     console.log("masterkey begin",masterkey);
-
-    //     const recovery = generateRecoveryKey();
-
-    //     const masterkeyHashByRecovery = encryptMasterKeyWithRecovery(masterkey,recovery);
-    //    const masterkeyDecodeByRecovery = decryptMasterKeyWithRecovery(masterkeyHashByRecovery,recovery);
-    //    console.log(masterkeyDecodeByRecovery);
-
-        // const pin = "123456";
-        //  const mkHashBypin = encryptMasterKeyWithPin(masterkey,pin);
-        //    const mkDecodeBypin = decryptMasterKeyWithPin(mkHashBypin,pin);
-        //    console.log(mkDecodeBypin);
-
-    //    const privateKeyHashByMK  = encryptPrivateKeyWithMasterKey(user1PrivateKeyBase64,masterkey);
-    //    const privateKeyDecodeByMK  = decryptPrivateKeyWithMasterKey(privateKeyHashByMK,masterkey);
-    //    console.log(privateKeyDecodeByMK);
-
-    //     // Mã hóa private key bằng PIN
-    //     const pin = "123456";
-    //     const privateKey1HashWithPin = encryptPrivateKeyWithPin(user1PrivateKeyBase64, pin);
-    //     console.log("Private key after encryption:", privateKey1HashWithPin);
-
-    //     const privateKey1DecodeWithPin = decryptPrivateKeyWithPin(privateKey1HashWithPin,"123456");
-
-    //     console.log("Private key after decryption:", privateKey1DecodeWithPin);
-
-
-
-    //     const recovery = await generateRecoveryKey();
-
-    //    const privateKey1HashWithRecoveryKey = encryptPrivateKeyWithPin(user1PrivateKeyBase64, recovery);
-    //     console.log("Private key before encryption RecoveryKey:", privateKey1HashWithRecoveryKey);
-
-    //     const privateKey1DecodeWithRecoveryKey = decryptPrivateKeyWithPin(privateKey1HashWithRecoveryKey,recovery);
-
-    //     console.log("Private key after decryption RecoveryKey:", privateKey1DecodeWithRecoveryKey);
-
-
-
-        // console.log("Người 1 giải mã tin nhắn:", decryptedMessageUser1);
-        // console.log("Người 2 giải mã tin nhắn:", decryptedMessageUser2);
-
     },
     watch: {
      '$route'() {

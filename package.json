@@ -19,6 +19,7 @@
         "@ckeditor/ckeditor5-build-classic": "^43.3.1",
         "@ckeditor/ckeditor5-vue": "^7.2.0",
         "@heroicons/vue": "^2.1.5",
+        "crypto-js": "^4.2.0",
         "emoji-picker-element": "^1.24.0",
         "pinia": "^2.2.6",
         "socket.io-client": "^4.8.1",

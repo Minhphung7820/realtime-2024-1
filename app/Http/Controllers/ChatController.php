@@ -10,6 +10,7 @@ use App\Models\Message;
 use App\Models\Reaction;
 use App\Models\SeenMessage;
 use App\Models\User;
+use App\Models\UserDevice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -138,6 +139,7 @@ class ChatController extends Controller
                     'ucp2.name',
                     'ucp2.avatar',
                     'ucp2.last_active',
+                    'ucp2.public_key',
                     'conversations.id as conversation_id'
                 ])
                 ->first();
@@ -162,11 +164,12 @@ class ChatController extends Controller
     {
         try {
             return DB::transaction(function () use ($request) {
+                $content = $request['content'];
                 return Message::create(
                     [
                         'conversation_id' => $request['conversation_id'],
                         'sender_id' => auth()->guard('api')->id(),
-                        'content' => $request['content'],
+                        'content' => $content,
                         'type' => $request['type'],
                         'created_at' => now()->format('Y-m-d H:i:s')
                     ]
@@ -440,6 +443,64 @@ class ChatController extends Controller
                         'user_id' => $userId,
                         'message_id' => $request['message_id']
                     ]));
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function init(Request $request)
+    {
+        try {
+            return DB::transaction(function () use ($request) {
+                $userId = auth()->guard('api')->id();
+
+                // Lấy tất cả các thiết bị liên quan đến user
+                $deviceQuery = UserDevice::with('user')->where('user_id', $userId);
+
+                // Kiểm tra nếu chỉ có 1 thiết bị và chưa có public_key
+                $device = $deviceQuery->first(); // Lấy thiết bị đầu tiên (nếu có)
+                if ($device->user && is_null($device->user->public_key)) {
+                    return response()->json([
+                        'is_first' => true,
+                        'sync' => false
+                    ]);
+                }
+
+                // Kiểm tra thiết bị hiện tại
+                $checkDevice = $deviceQuery->where('device_id', $request->device_id)->exists();
+                return response()->json([
+                    'is_first' => false,
+                    'sync' => $checkDevice
+                ]);
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function addKey(Request $request)
+    {
+        try {
+            return DB::transaction(function () use ($request) {
+                $userId = auth()->guard('api')->id();
+                $input = $request->only([
+                    'publicKey',
+                    'privatekeyDecryptedByMasterKey',
+                    'masterkeyDecryptedByRecoverycode',
+                    'masterkeyDecodeByPin'
+                ]);
+                return User::where('id', $userId)
+                    ->update([
+                        'public_key' => $input['publicKey'],
+                        'encrypted_private_key' => $input['privatekeyDecryptedByMasterKey'],
+                        'encrypted_master_key_with_pin' => $input['masterkeyDecodeByPin'],
+                        'encrypted_master_key_with_recovery' => $input['masterkeyDecryptedByRecoverycode']
+                    ]);
             });
         } catch (\Exception $e) {
             return response()->json([

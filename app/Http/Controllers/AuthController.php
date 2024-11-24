@@ -6,6 +6,7 @@ use App\Jobs\OTPVerificationJob;
 use App\Models\OTP;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\UserDevice;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -73,7 +74,18 @@ class AuthController extends Controller
 
         // Create access token for the user
         $token = $user->createToken('authToken')->accessToken;
-
+        //
+        UserDevice::updateOrCreate(
+            [
+                'user_id' => $user['id'],
+                'device_id' => $request['device_id']
+            ],
+            [
+                'user_id' => $user['id'],
+                'device_id' => $request['device_id']
+            ]
+        );
+        //
         return response()->json([
             'user' => $user,
             'message' => 'Login successful',

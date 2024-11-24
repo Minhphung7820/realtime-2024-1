@@ -58,7 +58,10 @@
 <script>
 import { onlineStore } from "../../stores/UserOnline.js";
 import {encodeQueryParams} from '../../utils/functions.js';
-
+import {
+    importPrivateKey,
+    decryptMessageWithPrivateKey
+} from "../../utils/functions.js"
 export default {
   inject: ['$axios','$userProfile','$socket'],
   props:{
@@ -110,17 +113,28 @@ export default {
     }
   });
    //
-    this.socket.on('receive_message', (e) => {
+    this.socket.on('receive_message', async (e) => {
 
       const matchingConversation = this.conversations.find(convo => parseInt(convo.conversation_id) === parseInt(e.conversation_id));
          if(matchingConversation){
             if (parseInt(e.sender_id) !== parseInt(this.$userProfile.id)) {
               if (this.$parent.dataMessage.id !== parseInt(e.conversation_id)) {
                 // Nếu cuộc trò chuyện không được mở, tăng số lượng tin nhắn chưa đọc
-                matchingConversation.lastMessage = e.content;
-                matchingConversation.unread = (matchingConversation.unread || 0) + 1;
-                matchingConversation.sender = 'friend';
-                this.moveConvToTop({id:e.conversation_id});
+                const encryptedContent = e.content[this.$userProfile.id]; // Giải mã field content
+                if (encryptedContent) {
+                    const privateKey = await importPrivateKey(
+                          localStorage.getItem("privateKey")
+                    );
+                    const decryptedLastMessage = await decryptMessageWithPrivateKey(
+                          encryptedContent,
+                          privateKey
+                    );
+                    //
+                    matchingConversation.lastMessage = decryptedLastMessage;
+                    matchingConversation.unread = (matchingConversation.unread || 0) + 1;
+                    matchingConversation.sender = 'friend';
+                    this.moveConvToTop({id:e.conversation_id});
+                }
               } else {
                 // Nếu cuộc trò chuyện đang được mở, có thể xử lý tin nhắn ngay tại đây
                 console.log("Tin nhắn mới trong cuộc trò chuyện đang mở:", e.content);
@@ -191,7 +205,37 @@ export default {
       try {
         // Lấy danh sách các cuộc trò chuyện
         const conversationResponse = await this.$axios.get(`/api/get-list-conversation`);
-        this.conversations = conversationResponse.data;
+
+        const decryptedConversation = await Promise.all(
+          conversationResponse.data.map(async (conversation) => {
+            if (conversation.type === "private") {
+              try {
+                const encryptedContent = JSON.parse(conversation.lastMessage)[this.$userProfile.id]; // Giải mã field content
+                if (encryptedContent) {
+                  const privateKey = await importPrivateKey(
+                    localStorage.getItem("privateKey")
+                  );
+                  const decryptedLastMessage = await decryptMessageWithPrivateKey(
+                    encryptedContent,
+                    privateKey
+                  );
+                  return {
+                    ...conversation,
+                    lastMessage: decryptedLastMessage,
+                  };
+                }
+              } catch (error) {
+                console.error("Decryption failed for convesation ID:", conversation.id, error);
+              }
+            }
+            return {
+              ...conversation,
+              lastMessage: "Không thể giải mã", // Hiển thị thông báo nếu giải mã thất bại
+            };
+          })
+        );
+
+        this.conversations = decryptedConversation;
 
         // Lấy danh sách người dùng online
         const onlineUsers = this.onlineStoreData.data;

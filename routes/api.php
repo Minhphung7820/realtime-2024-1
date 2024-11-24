@@ -26,3 +26,5 @@ Route::get('get-request-friend', [ChatController::class, 'getRequestFriend'])->m
 Route::get('get-list-conversation', [ChatController::class, 'listConversation'])->middleware('auth:api');
 Route::get('get-detail-conversation', [ChatController::class, 'detailConversation'])->middleware('auth:api');
 Route::post('add-reaction', [ChatController::class, 'addReaction'])->middleware('auth:api');
+Route::post('init', [ChatController::class, 'init'])->middleware('auth:api');
+Route::post('add-key', [ChatController::class, 'addKey'])->middleware('auth:api');

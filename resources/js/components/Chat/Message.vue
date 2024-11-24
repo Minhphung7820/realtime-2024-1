@@ -35,7 +35,7 @@
         <div :class="msg.sender === 'me' ? 'my-message relative group' : 'friend-message relative group'">
           <p>{{ msg.content }}</p>
           <!-- Reactions -->
-          <div v-if="msg.reactions.length > 0" class="reactions flex items-center mt-1">
+          <div v-if="msg.reactions && msg.reactions.length > 0" class="reactions flex items-center mt-1">
             <div v-for="(reaction, i) in getTopReactions(msg.reactions)" :key="i" class="reaction flex items-center mr-2">
               <span>{{ reaction.emoji }}</span>
               <span class="ml-1 text-sm text-gray-600">{{ reaction.count }}</span>
@@ -131,6 +131,12 @@
 import {formatTimeDifference,getFlagEmoji} from '../../utils/functions.js';
 import { PaperAirplaneIcon,FaceSmileIcon } from '@heroicons/vue/24/solid'
 import EmojiPicker from 'vue3-emoji-picker'
+import {
+    importPublicKey,
+    importPrivateKey,
+    encryptMessageWithPublicKey,
+    decryptMessageWithPrivateKey
+} from "../../utils/functions.js"
 import 'vue3-emoji-picker/css'
 
 export default {
@@ -158,7 +164,8 @@ export default {
         isOnline: false, // Trạng thái online (true: online, false: offline)
         lastOnline: '', // Thời gian online gần nhất nếu offline
         lastOnlineString: '',
-        conversation_id : null
+        conversation_id : null,
+        publicKey: null
       },
       messages : [],
       updateLastActiveFriendInterval : null,
@@ -185,10 +192,27 @@ export default {
     this.socket.on('receive_message', async (e) => {
       if (parseInt(e.conversation_id) === parseInt(this.userInfo.conversation_id)) {
         const sender = parseInt(e.sender_id) === parseInt(this.$userProfile.id) ? 'me' : 'friend';
-        this.messages.unshift({ sender, content: e.content,sender_id:e.sender_id ,reactions : [],total_reactions : 0,id: e.message_id});
 
-        // Cuộn xuống cuối và tự động kích hoạt trigger nếu cần
-        await this.scrollToBottom();
+        const encryptedContent = e.content[this.$userProfile.id]; // Giải mã field content
+        if (encryptedContent) {
+            const privateKey = await importPrivateKey(
+                  localStorage.getItem("privateKey")
+            );
+            const decryptedContent = await decryptMessageWithPrivateKey(
+                  encryptedContent,
+                  privateKey
+            );
+            //
+            this.messages.unshift({ sender,
+                  content: decryptedContent,
+                  sender_id:e.sender_id ,
+                  reactions : [],
+                  total_reactions : 0,
+                  id: e.message_id
+            });
+            // Cuộn xuống cuối và tự động kích hoạt trigger nếu cần
+            await this.scrollToBottom();
+        }
       }
     });
 
@@ -283,6 +307,7 @@ export default {
             totalPages: 0, // Tổng số trang
             isLoadingMore: false, // Đang tải thêm tin nhắn hay không
             hasMoreMessages: true, // Còn tin nhắn để tải hay không
+            publicKey: null
           };
           this.socket = this.$socket;
           await this.findConversation();
@@ -382,8 +407,7 @@ export default {
         }
       }
     },
-    triggerSeenMessage(latestMessage)
-    {
+    triggerSeenMessage(latestMessage){
       this.socket.emit('seen_message', {
           viewer_id : this.$userProfile.id,
           conversation_id: this.userInfo.conversation_id,
@@ -399,6 +423,9 @@ export default {
         const id = this.dataMessage.id;
         const type = this.dataMessage.type;
         const response = await this.$axios.get(`/api/get-detail-conversation?id=${id}&type=${type}`);
+        if(type === 'private'){
+          this.userInfo.publicKey = response.data.public_key;
+        }
         this.userInfo.id = response.data.id;
         this.userInfo.avatar = response.data.avatar;
         this.userInfo.name = response.data.name;
@@ -463,58 +490,131 @@ export default {
         console.warn('messageContent is not available yet.');
       }
     },
-    async getMessage(page = 1){
-        if(this.isDataMessageFetching){
-          return ;
-        }
-        this.isDataMessageFetching = true;
-        const id = this.dataMessage.id;
-        const type = this.dataMessage.type;
-        try {
-             const response = await this.$axios.get(`/api/get-message?id=${id}&type=${type}&limit=20&page=${page}`);
-             const { data, current_page, last_page, total } = response.data; // Lấy trực tiếp từ root
-             if (page === 1) {
-                this.messages = data; // Lấy tin nhắn mới nhất
-             } else {
-                this.messages = [...this.messages, ...data]; // Thêm tin nhắn cũ vào
-             }
-             // Cập nhật trạng thái phân trang
-             this.currentPage = current_page;
-             this.totalPages = last_page;
-             this.totalMessages = total;
-             this.hasMoreMessages = current_page < last_page;
-             //
-             if(page === 1){
-              this.viewers = response.data.viewers;
-              this.scrollToBottom(); // Cuộn xuống cuối cùng
-             }
-        } catch (error) {
-             console.log("Get Failed With Message :".error);
-        } finally{
-             this.isDataMessageFetching = false;
-        }
-    },
-   async sendMessage() {
-      if (this.newMessage.trim() !== '') {
-         try {
-            const response = await this.$axios.post(`/api/save-message`,{
-                   conversation_id : this.userInfo.conversation_id,
-                   content: this.newMessage,
-                   type : 'text'
-             });
-             this.socket.emit(`send_message`,{
-               conversation_id : this.userInfo.conversation_id,
-               sender_id : this.$userProfile.id,
-               content: this.newMessage,
-               message_id : response.data.id
-             });
-             this.viewers = [];
-             this.$emit('move-conv-to-top' , {id:this.userInfo.conversation_id,content : this.newMessage});
-        this.newMessage = '';
-         } catch (error) {
-              console.log("GET DATA FAILED : ",error);
-         }
+    async getMessage(page = 1) {
+      if (this.isDataMessageFetching) {
+        return;
       }
+      this.isDataMessageFetching = true;
+      const id = this.dataMessage.id;
+      const type = this.dataMessage.type;
+
+      try {
+        const response = await this.$axios.get(
+          `/api/get-message?id=${id}&type=${type}&limit=20&page=${page}`
+        );
+        const { data, current_page, last_page, total } = response.data;
+
+        // Giải mã tin nhắn ngay khi nhận được từ server
+        const decryptedMessages = await Promise.all(
+          data.map(async (message) => {
+            if (type === "private") {
+              try {
+                const encryptedContent = message.content[this.$userProfile.id]; // Giải mã field content
+                if (encryptedContent) {
+                  const privateKey = await importPrivateKey(
+                    localStorage.getItem("privateKey")
+                  );
+                  const decryptedContent = await decryptMessageWithPrivateKey(
+                    encryptedContent,
+                    privateKey
+                  );
+                  return {
+                    ...message,
+                    content: decryptedContent,
+                  };
+                }
+              } catch (error) {
+                console.error("Decryption failed for message ID:", message.id, error);
+              }
+            }
+            return {
+              ...message,
+              content: "Không thể giải mã", // Hiển thị thông báo nếu giải mã thất bại
+            };
+          })
+        );
+
+        // Cập nhật danh sách tin nhắn
+        if (page === 1) {
+          this.messages = decryptedMessages; // Lấy tin nhắn mới nhất
+        } else {
+          this.messages = [...this.messages, ...decryptedMessages]; // Thêm tin nhắn cũ vào
+        }
+
+        // Cập nhật trạng thái phân trang
+        this.currentPage = current_page;
+        this.totalPages = last_page;
+        this.totalMessages = total;
+        this.hasMoreMessages = current_page < last_page;
+
+        if (page === 1) {
+          this.viewers = response.data.viewers;
+          this.scrollToBottom(); // Cuộn xuống cuối cùng
+        }
+      } catch (error) {
+        console.error("Get Failed With Message:", error);
+      } finally {
+        this.isDataMessageFetching = false;
+      }
+    },
+    async sendMessage() {
+        if (this.newMessage.trim() !== '') {
+            try {
+                let messageSend;
+                if (this.dataMessage.type === 'private') {
+                    let message = this.newMessage;
+                    try {
+                        // Mã hóa tin nhắn
+                        const senderEncryptedMessage = await encryptMessageWithPublicKey(
+                            message,
+                            await importPublicKey(this.$userProfile.public_key)
+                        );
+                        const receiverEncryptedMessage = await encryptMessageWithPublicKey(
+                            message,
+                            await importPublicKey(this.userInfo.publicKey)
+                        );
+
+                        messageSend = {
+                          [this.$userProfile.id]: senderEncryptedMessage,
+                          [this.userInfo.id]: receiverEncryptedMessage,
+                        };
+
+                        console.log("Encrypted message:", messageSend);
+                    } catch (encryptionError) {
+                        console.error("Error during encryption:", encryptionError);
+                        throw encryptionError; // Ném lỗi để xử lý bên dưới
+                    }
+                } else {
+                    messageSend = this.newMessage;
+                }
+
+                console.log("Final messageSend:", messageSend);
+
+                const response = await this.$axios.post(`/api/save-message`, {
+                    conversation_id: this.userInfo.conversation_id,
+                    content: messageSend,
+                    type: 'text',
+                    type_conversation : this.dataMessage.type
+                });
+
+                this.socket.emit(`send_message`, {
+                    conversation_id: this.userInfo.conversation_id,
+                    sender_id: this.$userProfile.id,
+                    content: messageSend,
+                    message_id: response.data.id,
+                });
+
+                this.viewers = [];
+                this.$emit('move-conv-to-top', {
+                    id: this.userInfo.conversation_id,
+                    content: this.newMessage,
+                });
+
+                this.newMessage = '';
+            } catch (error) {
+                console.error("Error in sendMessage function:", error);
+            }
+        }
     },
     sendTypingEvent() {
         this.socket.emit(`typing`,{

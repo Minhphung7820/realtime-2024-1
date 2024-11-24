@@ -20,6 +20,7 @@
 </template>
 
 <script>
+import {generateDeviceId} from "../../utils/functions.js";
 export default {
   inject: ['$axios'],
   data() {
@@ -35,8 +36,8 @@ export default {
         const response = await this.$axios.post('/api/login', {
           email: this.email,
           password: this.password,
+          device_id : generateDeviceId()
         });
-
         localStorage.setItem('token', response.data.token);
         window.location = '/';
       } catch (error) {

@@ -24,7 +24,11 @@ class User extends Authenticatable
         'password',
         'last_active',
         'is_active',
-        'avatar'
+        'avatar',
+        'public_key',
+        'encrypted_private_key',
+        'encrypted_master_key_with_pin',
+        'encrypted_master_key_with_recovery'
     ];
 
     /**

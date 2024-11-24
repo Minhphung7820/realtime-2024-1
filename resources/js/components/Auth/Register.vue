@@ -45,7 +45,12 @@ export default {
           email: this.email,
           password: this.password,
           password_confirmation: this.passwordConfirmation,
-        });
+        },{
+        headers: {
+          'Custom-Header-1': 'HeaderValue1', // Header tùy chỉnh 1
+          'Custom-Header-2': 'HeaderValue2', // Header tùy chỉnh 2
+        },
+      });
         this.userId = response.data.user.id;
         // this.$router.push({ name: 'OTPVerification', query: { email: this.email, user_id : this.userId } });
         this.$router.push('/login');

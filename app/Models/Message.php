@@ -17,6 +17,8 @@ class Message extends Model
         'seen'
     ];
 
+    protected $casts = ['content' => 'json'];
+
     public function conversation()
     {
         return $this->belongsTo(Conversation::class);

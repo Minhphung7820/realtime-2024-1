@@ -328,10 +328,6 @@ export default {
   methods: {
     async addReaction(messageId, emoji) {
       try {
-        await this.$axios.post(`/api/add-reaction`, {
-          message_id: messageId,
-          emoji: emoji,
-        });
         this.socket.emit(`reaction_message`,{
            message_id : messageId,
            responder_id : this.$userProfile.id,
@@ -348,6 +344,10 @@ export default {
             }
             updatedMessage.total_reactions += 1; // Tăng tổng số reaction
           }
+          await this.$axios.post(`/api/add-reaction`, {
+            message_id: messageId,
+            emoji: emoji,
+          });
       } catch (error) {
         console.error('Failed to add reaction:', error);
       }

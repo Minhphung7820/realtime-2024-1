@@ -31,7 +31,12 @@ class ChatController extends Controller
             })
             ->where('friendships.status', 'accepted')
             ->where('users.id', '!=', $userId) // Loại bỏ chính user khỏi danh sách
-            ->select('users.*');
+            ->select(
+                'users.id',
+                'users.name',
+                'users.avatar',
+                'users.last_active'
+            );
         if ($origin === 'http://localhost:6060') {
             $data = $people->pluck('users.last_active', 'users.id');
         } else {
@@ -285,6 +290,11 @@ class ChatController extends Controller
             $userId = auth()->guard('api')->id();
 
             $users = User::query()
+                ->select(
+                    'users.id',
+                    'users.name',
+                    'users.avatar'
+                )
                 ->when(isset($request['keyword']), function ($query) use ($request) {
                     return $query->where(function ($query) use ($request) {
                         $query->where('name', 'LIKE', "%" . $request['keyword'] . "%");

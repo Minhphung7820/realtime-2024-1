@@ -211,27 +211,34 @@ export default {
             if (conversation.type === "private") {
               try {
                 const encryptedContent = JSON.parse(conversation.lastMessage)[this.$userProfile.id]; // Giải mã field content
-                if (encryptedContent) {
-                  const privateKey = await importPrivateKey(
-                    localStorage.getItem("privateKey")
-                  );
-                  const decryptedLastMessage = await decryptMessageWithPrivateKey(
-                    encryptedContent,
-                    privateKey
-                  );
+                let lastMessageDecrypt;
+                  if (encryptedContent) {
+                    const privateKey = await importPrivateKey(
+                      localStorage.getItem("privateKey")
+                    );
+                    const decryptedLastMessage = await decryptMessageWithPrivateKey(
+                      encryptedContent,
+                      privateKey
+                    );
+                    lastMessageDecrypt = decryptedLastMessage;
+                  }
                   return {
                     ...conversation,
-                    lastMessage: decryptedLastMessage,
+                    lastMessage: !encryptedContent ? null : lastMessageDecrypt,
                   };
-                }
               } catch (error) {
                 console.error("Decryption failed for convesation ID:", conversation.id, error);
               }
+              return {
+                ...conversation,
+                lastMessage: "Không thể giải mã", // Hiển thị thông báo nếu giải mã thất bại
+              };
             }
-            return {
-              ...conversation,
-              lastMessage: "Không thể giải mã", // Hiển thị thông báo nếu giải mã thất bại
-            };
+            if (conversation.type === "private") {
+              return {
+                ...conversation,
+              };
+            }
           })
         );
 

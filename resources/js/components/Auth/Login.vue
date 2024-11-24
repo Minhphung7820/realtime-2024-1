@@ -39,7 +39,7 @@ export default {
           device_id : generateDeviceId()
         });
         localStorage.setItem('token', response.data.token);
-        window.location = '/';
+        window.location.href = '/';
       } catch (error) {
         this.errorMessage = error.response.data.message;
       }

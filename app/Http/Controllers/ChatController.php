@@ -495,6 +495,7 @@ class ChatController extends Controller
                     'masterkeyDecodeByPin'
                 ]);
                 return User::where('id', $userId)
+                    ->whereNull('public_key')
                     ->update([
                         'public_key' => $input['publicKey'],
                         'encrypted_private_key' => $input['privatekeyDecryptedByMasterKey'],

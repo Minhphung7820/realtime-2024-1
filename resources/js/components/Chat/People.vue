@@ -108,8 +108,37 @@
               {{ request.name }}
             </h4>
             <div class="flex space-x-2 mt-1">
-              <button @click="changeStatusRequestFriend(request.id, 'accepted')" class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Chấp nhận</button>
-              <button @click="changeStatusRequestFriend(request.id, 'blocked')" class="px-2 py-1 bg-red-500 text-white rounded text-xs">Từ chối</button>
+                <!-- Nút Chấp nhận -->
+                <button
+                  v-if="isHandlingChangeStatusRequest[request.id] === 'accepted'"
+                  disabled
+                  class="px-2 py-1 bg-gray-400 text-white rounded text-xs cursor-not-allowed"
+                >
+                  Đang xử lý
+                </button>
+                <button
+                  v-else
+                  @click="changeStatusRequestFriend(request.id, 'accepted')"
+                  class="px-2 py-1 bg-blue-500 text-white rounded text-xs"
+                >
+                  Chấp nhận
+                </button>
+
+                <!-- Nút Từ chối -->
+                <button
+                  v-if="isHandlingChangeStatusRequest[request.id] === 'blocked'"
+                  disabled
+                  class="px-2 py-1 bg-gray-400 text-white rounded text-xs cursor-not-allowed"
+                >
+                  Đang xử lý
+                </button>
+                <button
+                  v-else
+                  @click="changeStatusRequestFriend(request.id, 'blocked')"
+                  class="px-2 py-1 bg-red-500 text-white rounded text-xs"
+                >
+                  Từ chối
+                </button>
             </div>
           </div>
         </li>
@@ -210,7 +239,8 @@ export default {
       currentPageFriend: 1, // Trang hiện tại
       totalPagesFriend: 0, // Tổng số trang
       isLoadingMoreFriend: false, // Đang tải thêm tin nhắn hay không
-      hasMoreFriend: true, // Còn tin nhắn để tải hay không
+      hasMoreFriend: true, // Còn tin nhắn để tải hay không,
+      isHandlingChangeStatusRequest: {}
     };
   },
   computed: {
@@ -320,6 +350,7 @@ export default {
       this.$emit('open-chat', userId, type); // Phát sự kiện open-chat lên cha
     },
     async changeStatusRequestFriend(requestId,status){
+          this.isHandlingChangeStatusRequest[requestId] = status;
          try {
          const responese =  await this.$axios.put(`/api/change-request-friend/${requestId}`,{
             status
@@ -342,7 +373,9 @@ export default {
           }
         } catch (error) {
           console.error('Failed to fetch online users:', error);
-        }
+        } finally {
+         delete this.isHandlingChangeStatusRequest[requestId];
+      }
     },
     async getRequestFriend()
     {
@@ -410,6 +443,13 @@ export default {
 </script>
 
 <style scoped>
+.cursor-not-allowed {
+  cursor: not-allowed;
+}
+.bg-gray-400 {
+  background-color: #cbd5e0; /* Màu xám nhạt */
+}
+
 .people-item {
   display: flex;
   align-items: center;

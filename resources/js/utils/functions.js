@@ -385,3 +385,49 @@ export function decryptMasterKeyWithRecovery(encryptedMasterKey, recoveryKey) {
         return null; // Trả về null nếu giải mã thất bại
     }
 }
+
+export async function checkKeyPair(privateKeyPem, publicKeyPem) {
+    try {
+        // Parse Public Key
+        const publicKey = await window.crypto.subtle.importKey(
+            "spki",
+            convertPemToBinary(publicKeyPem), { name: "RSA-PSS", hash: { name: "SHA-256" } },
+            true, ["verify"]
+        );
+
+        // Parse Private Key
+        const privateKey = await window.crypto.subtle.importKey(
+            "pkcs8",
+            convertPemToBinary(privateKeyPem), { name: "RSA-PSS", hash: { name: "SHA-256" } },
+            true, ["sign"]
+        );
+
+        // Sign a message using the private key
+        const data = new TextEncoder().encode("Test Message");
+        const signature = await window.crypto.subtle.sign({ name: "RSA-PSS", saltLength: 32 },
+            privateKey,
+            data
+        );
+
+        // Verify the signature using the public key
+        const isVerified = await window.crypto.subtle.verify({ name: "RSA-PSS", saltLength: 32 },
+            publicKey,
+            signature,
+            data
+        );
+
+        return isVerified;
+    } catch (error) {
+        console.error("Error checking key pair:", error);
+        return false;
+    }
+}
+
+// Helper function to convert PEM to binary
+function convertPemToBinary(pem) {
+    const base64 = pem
+        .replace(/-----BEGIN [^-]+-----/, "")
+        .replace(/-----END [^-]+-----/, "")
+        .replace(/\s+/g, "");
+    return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+}

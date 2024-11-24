@@ -63,7 +63,8 @@ import {
     encryptMasterKeyWithPin,
     decryptMasterKeyWithPin,
     encryptMasterKeyWithRecovery,
-    decryptMasterKeyWithRecovery
+    decryptMasterKeyWithRecovery,
+    checkKeyPair
     } from "./utils/functions.js"
 export default {
     inject: ['$axios','$userProfile'],
@@ -126,8 +127,14 @@ export default {
                  this.showPopup = true;
                  this.isFirst = false;
                }else{
-                 this.showPopup = false;
-                 this.isFirst = false;
+                 const keyPair = await checkKeyPair(privateKey, this.$userProfile.public_key);
+                 if(!keyPair){
+                    this.showPopup = true;
+                    this.isFirst = false;
+                 }else{
+                    this.showPopup = false;
+                    this.isFirst = false;
+                 }
                }
             }
         } catch (error) {
@@ -169,8 +176,9 @@ export default {
             localStorage.setItem('privateKey',privateKey);
             window.location.reload();
          }else{
-             const privateKey=  localStorage.getItem('privateKey');
-             if(!privateKey){
+             const privateKey= localStorage.getItem('privateKey');
+             const keyPair = await checkKeyPair(privateKey, this.$userProfile.public_key);
+             if(!privateKey || !keyPair){
                  const masterkeyEncryptedByPin = this.$userProfile.encrypted_master_key_with_pin;
                  const masterkeyDecryptedByPin = decryptMasterKeyWithPin(masterkeyEncryptedByPin,pinCode);
                  if(!masterkeyDecryptedByPin){

@@ -1,6 +1,5 @@
 // stores/useSharedData.js
 import { defineStore } from 'pinia';
-import axios from 'axios';
 
 export const onlineStore = defineStore('sharedData', {
     state: () => ({
@@ -30,5 +29,22 @@ export const onlineStore = defineStore('sharedData', {
                 this.isLoading = false;
             }
         },
+        initializeSocket(socket) {
+            // Lắng nghe sự kiện từ server
+            socket.on('user_list', (e) => {
+                const find = this.data.data.find(person => parseInt(person.userID) === parseInt(e.userID));
+                if (find) {
+                    find.isOnline = e.online;
+                    find.last_active = null;
+                }
+            });
+            socket.on('user_disconnect_list', (e) => {
+                const find = this.data.data.find(person => parseInt(person.userID) === parseInt(e.userID));
+                if (find) {
+                    find.isOnline = e.online;
+                    find.last_active = e.last_active;
+                }
+            });
+        }
     },
 });

@@ -33,7 +33,7 @@ class ChatController extends Controller
             ->where('users.id', '!=', $userId) // Loại bỏ chính user khỏi danh sách
             ->select('users.*');
         if ($origin === 'http://localhost:6060') {
-            $data = $people->pluck('users.id');
+            $data = $people->pluck('users.last_active', 'users.id');
         } else {
             $data = $people->paginate($request['limit'] ?? 10);
         }

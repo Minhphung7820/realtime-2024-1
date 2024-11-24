@@ -67,7 +67,7 @@ import {
     checkKeyPair
     } from "./utils/functions.js"
 export default {
-    inject: ['$axios','$userProfile'],
+    inject: ['$axios','$userProfile','$socket'],
     name: 'App',
     data() {
         return {
@@ -86,6 +86,7 @@ export default {
         // Gọi store để fetch dữ liệu
         const store = onlineStore();
         await store.fetchData(); // Gọi action fetchData từ store
+        store.initializeSocket(this.$socket)
         //
         await this.init();
         }

@@ -189,7 +189,6 @@ export default {
           // Đảm bảo reactivity để Vue trigger lại hiệu ứng
           this.conversations = [...this.conversations];
         }else{
-          await onlineStore().fetchData(true);
           await this.getConversations();
           this.socket.emit('join_conversation', objectConv.id);
           this.conversations = [...this.conversations];

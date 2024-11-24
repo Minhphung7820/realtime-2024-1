@@ -312,10 +312,10 @@ export default {
         // Các người dùng còn lại không có last_active_string
         if(page === 1){
           this.people = data.map((person, index) => {
-          const isOnlineUser = onlineUsers.find(user => parseInt(user.userID) === parseInt(person.id));
+          const userSocket = onlineUsers.find(user => parseInt(user.userID) === parseInt(person.id));
           return {
             ...person,
-            isOnline: !!isOnlineUser,
+            isOnline: userSocket.isOnline,
             last_active_string: index < 9 ? (person.last_active
               ? formatTimeDifference(person.last_active)
               : null) : null,
@@ -323,11 +323,11 @@ export default {
         });
         }else{
           this.people = [...this.people, ...data].map((person, index) => {
-          const isOnlineUser = onlineUsers.find(user => parseInt(user.userID) === parseInt(person.id));
+          const userSocket = onlineUsers.find(user => parseInt(user.userID) === parseInt(person.id));
           return {
             ...person,
-            isOnline: !!isOnlineUser,
-            last_active_string: index < 9 ? (person.last_active
+            isOnline: userSocket.isOnline,
+            last_active_string: index <= 9 ? (person.last_active
               ? formatTimeDifference(person.last_active)
               : null) : null,
           };
@@ -423,7 +423,7 @@ export default {
       }
     },
     handleUserWithStatus(user) {
-      const matchingPerson = this.people.find(person => person.id === parseInt(user.userID));
+      const matchingPerson = this.people.find(person => parseInt(person.id) === parseInt(user.userID));
       if (matchingPerson) {
         matchingPerson.isOnline = user.online;
         matchingPerson.last_active = user.last_active;

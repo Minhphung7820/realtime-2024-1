@@ -6,7 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\FileUploadController;
 
-Route::post('/upload-image', [FileUploadController::class, 'uploadImage'])->name('upload.image');
+Route::post('/upload-file', [FileUploadController::class, 'uploadFile'])->middleware('auth:api');
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
 Route::post('/set-last-online', [AuthController::class, 'setLastOnline']);

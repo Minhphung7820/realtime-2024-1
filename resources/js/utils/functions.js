@@ -415,3 +415,80 @@ export async function decryptMessageWithPrivateKey(encryptedData, privateKey) {
 
     return new TextDecoder().decode(decryptedMessage);
 }
+
+export function generateGroupKey() {
+    // Tạo Group Key ngẫu nhiên (32 bytes = 256 bits)
+    const groupKey = crypto.getRandomValues(new Uint8Array(32));
+    return btoa(String.fromCharCode(...groupKey)); // Encode Base64 để lưu trữ
+}
+
+export async function encryptMessageWithGroupKey(message, groupKey) {
+    // Decode Group Key từ Base64
+    const rawGroupKey = new Uint8Array(atob(groupKey).split("").map(c => c.charCodeAt(0)));
+
+    // Tạo Initialization Vector (IV) ngẫu nhiên
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    // Mã hóa tin nhắn bằng AES-GCM
+    const encryptedMessage = await crypto.subtle.encrypt({
+        name: "AES-GCM",
+        iv,
+    },
+        await crypto.subtle.importKey("raw", rawGroupKey, "AES-GCM", false, ["encrypt"]),
+        new TextEncoder().encode(message)
+    );
+
+    return {
+        encryptedMessage: btoa(String.fromCharCode(...new Uint8Array(encryptedMessage))), // Base64
+        iv: btoa(String.fromCharCode(...iv)), // Base64
+    };
+}
+
+export async function decryptMessageWithGroupKey(encryptedData, groupKey) {
+    const { encryptedMessage, iv } = encryptedData;
+
+    // Decode Group Key và IV từ Base64
+    const rawGroupKey = new Uint8Array(atob(groupKey).split("").map(c => c.charCodeAt(0)));
+    const rawIv = new Uint8Array(atob(iv).split("").map(c => c.charCodeAt(0)));
+
+    // Giải mã tin nhắn bằng AES-GCM
+    const decryptedMessage = await crypto.subtle.decrypt({
+        name: "AES-GCM",
+        iv: rawIv,
+    },
+        await crypto.subtle.importKey("raw", rawGroupKey, "AES-GCM", false, ["decrypt"]),
+        new Uint8Array(atob(encryptedMessage).split("").map(c => c.charCodeAt(0)))
+    );
+
+    return new TextDecoder().decode(decryptedMessage);
+}
+
+export async function encryptGroupKeyWithPublicKey(groupKey, publicKey) {
+    // Decode Group Key từ Base64
+    const rawGroupKey = new Uint8Array(atob(groupKey).split("").map(c => c.charCodeAt(0)));
+
+    // Mã hóa Group Key bằng RSA-OAEP
+    const encryptedGroupKey = await crypto.subtle.encrypt({
+        name: "RSA-OAEP",
+    },
+        publicKey,
+        rawGroupKey
+    );
+
+    return btoa(String.fromCharCode(...new Uint8Array(encryptedGroupKey))); // Base64
+}
+
+export async function decryptGroupKeyWithPrivateKey(encryptedGroupKey, privateKey) {
+    // Decode Group Key từ Base64
+    const rawEncryptedGroupKey = new Uint8Array(atob(encryptedGroupKey).split("").map(c => c.charCodeAt(0)));
+
+    // Giải mã Group Key bằng RSA-OAEP
+    const decryptedGroupKey = await crypto.subtle.decrypt({
+        name: "RSA-OAEP",
+    },
+        privateKey,
+        rawEncryptedGroupKey
+    );
+
+    return btoa(String.fromCharCode(...new Uint8Array(decryptedGroupKey))); // Base64
+}

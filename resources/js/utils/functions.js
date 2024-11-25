@@ -164,52 +164,14 @@ export function decryptPrivateKeyWithRecoveryKey(encryptedPrivateKey, recoveryKe
     }
 }
 
-/**
- * Hàm mã hóa tin nhắn bằng public key
- * @param {string} message - Tin nhắn cần mã hóa
- * @param {CryptoKey} publicKey - Public key để mã hóa
- * @returns {string} - Tin nhắn đã mã hóa (dạng Base64)
- */
-export async function encryptMessageWithPublicKey(message, publicKey) {
-    // Mã hóa tin nhắn bằng public key
-    const encryptedMessage = await crypto.subtle.encrypt({
-        name: "RSA-OAEP",
-    },
-        publicKey,
-        new TextEncoder().encode(message) // Convert tin nhắn sang Uint8Array
-    );
-
-    // Encode Base64 để trả về chuỗi dễ lưu trữ
-    return btoa(String.fromCharCode(...new Uint8Array(encryptedMessage)));
-}
-
-/**
- * Hàm giải mã tin nhắn bằng private key
- * @param {string} encryptedMessage - Tin nhắn đã mã hóa (dạng Base64)
- * @param {CryptoKey} privateKey - Private key để giải mã
- * @returns {string} - Tin nhắn gốc sau khi giải mã
- */
-export async function decryptMessageWithPrivateKey(encryptedMessage, privateKey) {
-    // Decode Base64 thành Uint8Array
-    const encryptedData = new Uint8Array(
-        atob(encryptedMessage).split("").map((char) => char.charCodeAt(0))
-    );
-
-    // Giải mã tin nhắn bằng private key
-    const decryptedMessage = await crypto.subtle.decrypt({
-        name: "RSA-OAEP",
-    },
-        privateKey,
-        encryptedData
-    );
-
-    // Convert Uint8Array thành chuỗi tin nhắn gốc
-    return new TextDecoder().decode(decryptedMessage);
-}
-
-// Hàm import public key từ Base64
-export async function importPublicKey(base64PublicKey) {
-    const binaryDer = Uint8Array.from(atob(base64PublicKey), (char) => char.charCodeAt(0));
+// Hàm importPublicKey
+export async function importPublicKey(base64Key) {
+    const pemKey = `-----BEGIN PUBLIC KEY-----\n${base64Key.match(/.{1,64}/g).join("\n")}\n-----END PUBLIC KEY-----`;
+    const cleanBase64 = pemKey
+        .replace(/-----BEGIN PUBLIC KEY-----/, "")
+        .replace(/-----END PUBLIC KEY-----/, "")
+        .replace(/\n/g, "");
+    const binaryDer = Uint8Array.from(atob(cleanBase64), (char) => char.charCodeAt(0));
     return await crypto.subtle.importKey(
         "spki",
         binaryDer, {
@@ -220,44 +182,22 @@ export async function importPublicKey(base64PublicKey) {
     );
 }
 
-/**
- * Import private key từ Base64
- * @param {string} base64PrivateKey - Private key dạng Base64
- * @returns {CryptoKey} - Private key dạng CryptoKey
- */
-export async function importPrivateKey(base64PrivateKey) {
-    const binaryDer = Uint8Array.from(atob(base64PrivateKey), (char) => char.charCodeAt(0));
+export async function importPrivateKey(base64Key) {
+    const pemKey = `-----BEGIN PRIVATE KEY-----\n${base64Key.match(/.{1,64}/g).join("\n")}\n-----END PRIVATE KEY-----`;
+    const cleanBase64 = pemKey
+        .replace(/-----BEGIN PRIVATE KEY-----/, "")
+        .replace(/-----END PRIVATE KEY-----/, "")
+        .replace(/\n/g, "");
+    const binaryDer = Uint8Array.from(atob(cleanBase64), (char) => char.charCodeAt(0));
     return await crypto.subtle.importKey(
-        "pkcs8", // Định dạng của private key
+        "pkcs8",
         binaryDer, {
         name: "RSA-OAEP",
         hash: { name: "SHA-256" },
     },
-        true, // Cho phép export nếu cần
-        ["decrypt"] // Private key chỉ được dùng để giải mã
+        true, ["decrypt"]
     );
 }
-
-/**
- * Xuất private key từ CryptoKey về Base64
- * @param {CryptoKey} privateKey - Private key dạng CryptoKey
- * @returns {string} - Private key dạng Base64
- */
-export async function exportPrivateKey(privateKey) {
-    const exported = await crypto.subtle.exportKey("pkcs8", privateKey);
-    return btoa(String.fromCharCode(...new Uint8Array(exported)));
-}
-
-/**
- * Xuất public key từ CryptoKey về Base64
- * @param {CryptoKey} publicKey - Public key dạng CryptoKey
- * @returns {string} - Public key dạng Base64
- */
-export async function exportPublicKey(publicKey) {
-    const exported = await crypto.subtle.exportKey("spki", publicKey); // "spki" là định dạng dành cho public key
-    return btoa(String.fromCharCode(...new Uint8Array(exported)));
-}
-
 /**
  * Tạo mã Master Key ngẫu nhiên
  * @returns {string} - Master Key (dạng chuỗi Base64)
@@ -430,4 +370,48 @@ function convertPemToBinary(pem) {
         .replace(/-----END [^-]+-----/, "")
         .replace(/\s+/g, "");
     return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+}
+
+export async function encryptMessageWithPublicKey(message, publicKey) {
+    const aesKey = crypto.getRandomValues(new Uint8Array(32)); // Tạo AES Key
+    const iv = crypto.getRandomValues(new Uint8Array(12)); // Tạo Initialization Vector (IV)
+    const aesCipher = await crypto.subtle.encrypt({
+        name: "AES-GCM",
+        iv,
+    },
+        await crypto.subtle.importKey("raw", aesKey, "AES-GCM", false, ["encrypt"]),
+        new TextEncoder().encode(message)
+    );
+    const encryptedAesKey = await crypto.subtle.encrypt({
+        name: "RSA-OAEP",
+    },
+        publicKey,
+        aesKey
+    );
+    return {
+        encryptedMessage: btoa(String.fromCharCode(...new Uint8Array(aesCipher))),
+        encryptedKey: btoa(String.fromCharCode(...new Uint8Array(encryptedAesKey))),
+        iv: btoa(String.fromCharCode(...iv)),
+    };
+}
+
+export async function decryptMessageWithPrivateKey(encryptedData, privateKey) {
+    const { encryptedMessage, encryptedKey, iv } = encryptedData;
+
+    const aesKey = await crypto.subtle.decrypt({
+        name: "RSA-OAEP",
+    },
+        privateKey,
+        new Uint8Array(atob(encryptedKey).split("").map((c) => c.charCodeAt(0)))
+    );
+
+    const decryptedMessage = await crypto.subtle.decrypt({
+        name: "AES-GCM",
+        iv: new Uint8Array(atob(iv).split("").map((c) => c.charCodeAt(0))),
+    },
+        await crypto.subtle.importKey("raw", aesKey, "AES-GCM", false, ["decrypt"]),
+        new Uint8Array(atob(encryptedMessage).split("").map((c) => c.charCodeAt(0)))
+    );
+
+    return new TextDecoder().decode(decryptedMessage);
 }

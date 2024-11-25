@@ -47,23 +47,13 @@ import { onlineStore } from "./stores/UserOnline.js"; // Đường dẫn tới s
 import {
     generateDeviceId,
     generateKeyPair,
-    encryptMessageWithPublicKey,
-    decryptMessageWithPrivateKey,
-    importPublicKey,
-    importPrivateKey,
-    encryptPrivateKeyWithPin,
-    decryptPrivateKeyWithPin,
-    exportPrivateKey,
     generateRecoveryKey,
-    encryptPrivateKeyWithRecoveryKey,
-    decryptPrivateKeyWithRecoveryKey,
     generateMasterKey,
     encryptPrivateKeyWithMasterKey,
     decryptPrivateKeyWithMasterKey,
     encryptMasterKeyWithPin,
     decryptMasterKeyWithPin,
     encryptMasterKeyWithRecovery,
-    decryptMasterKeyWithRecovery,
     checkKeyPair
     } from "./utils/functions.js"
 export default {

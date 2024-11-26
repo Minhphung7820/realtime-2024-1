@@ -118,6 +118,32 @@
         <EmojiPicker @select="onSelectEmoji" />
       </div>
     </div>
+    <!-- Nút ba chấm dọc -->
+    <div class="relative">
+      <button
+        @click="toggleMenu"
+        class="ml-2 px-2 sm:px-3 py-1 sm:py-2 text-gray-600 rounded-full flex items-center justify-center"
+      >
+        <EllipsisVerticalIcon class="h-6 text-gray-600 hover:text-gray-700" />
+      </button>
+      <!-- Menu tùy chọn -->
+      <transition name="menu-fade">
+        <div
+          v-if="showMenu"
+          class="absolute right-0 bottom-10 bg-white border border-gray-300 rounded shadow-md z-10 w-40 mt-2 animate-slide-up"
+        >
+          <button @click="sendImage" class="block w-full text-left px-4 py-2 hover:bg-gray-100 flex gap-5">
+            <PhotoIcon class="h-6 w-6 text-gray-600 hover:text-gray-700" /> Ảnh
+          </button>
+          <button @click="sendFile" class="block w-full text-left px-4 py-2 hover:bg-gray-100 flex gap-5">
+            <PaperClipIcon class="h-6 w-6 text-gray-600 hover:text-gray-700" /> File
+          </button>
+          <button @click="startRecording" class="block w-full text-left px-4 py-2 hover:bg-gray-100 flex gap-5">
+            <MicrophoneIcon class="h-6 w-6 text-gray-600 hover:text-gray-700" /> Ghi âm
+          </button>
+        </div>
+      </transition>
+    </div>
     <!-- Nút gửi -->
     <button @click="sendMessage" class="ml-2 px-2 sm:px-4 py-1 sm:py-2 bg-blue-500 text-white rounded text-sm sm:text-base">
       <PaperAirplaneIcon class="h-6 w-6 text-white-500" />
@@ -128,8 +154,15 @@
 </template>
 
 <script>
-import {formatTimeDifference,getFlagEmoji} from '../../utils/functions.js';
-import { PaperAirplaneIcon,FaceSmileIcon } from '@heroicons/vue/24/solid'
+import {formatTimeDifference} from '../../utils/functions.js';
+import {
+  PaperAirplaneIcon,
+  FaceSmileIcon,
+  EllipsisVerticalIcon ,
+  PhotoIcon,
+  PaperClipIcon,
+  MicrophoneIcon
+  } from '@heroicons/vue/24/solid'
 import EmojiPicker from 'vue3-emoji-picker'
 import {
     importPublicKey,
@@ -144,7 +177,11 @@ export default {
   components:{
     PaperAirplaneIcon,
     FaceSmileIcon,
-    EmojiPicker
+    EmojiPicker,
+    EllipsisVerticalIcon,
+    PhotoIcon,
+    PaperClipIcon,
+    MicrophoneIcon
   },
   props:{
       dataMessage:{
@@ -154,6 +191,7 @@ export default {
   },
   data() {
     return {
+      showMenu : false,
       showEmojiPicker: false,
       availableReactions: ['👍', '❤️', '😂', '😮', '😢', '😡'],
       viewers: [],
@@ -292,6 +330,7 @@ export default {
             // this.socket.emit('leave_conversation', this.userInfo.conversation_id);
             this.socket = null;
           }
+          this.showMenu = false;
           this.isLoading = true;
           this.messages = [];
           this.viewers = [];
@@ -326,6 +365,24 @@ export default {
     },
   },
   methods: {
+    toggleMenu() {
+    this.showMenu = !this.showMenu;
+    },
+    sendImage() {
+      // Logic gửi ảnh
+      alert("Chức năng gửi ảnh đang phát triển.");
+      this.showMenu = false;
+    },
+    sendFile() {
+      // Logic gửi file
+      alert("Chức năng gửi file đang phát triển.");
+      this.showMenu = false;
+    },
+    startRecording() {
+      // Logic ghi âm
+      alert("Chức năng ghi âm đang phát triển.");
+      this.showMenu = false;
+    },
     async addReaction(messageId, emoji) {
       try {
         this.socket.emit(`reaction_message`,{
@@ -629,6 +686,21 @@ export default {
 </script>
 
 <style scoped>
+.menu-fade-enter-active,
+.menu-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.menu-fade-enter-from,
+.menu-fade-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.menu-fade-enter-to,
+.menu-fade-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .message-box {
   display: flex;
   flex-direction: column;

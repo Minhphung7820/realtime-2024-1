@@ -93,7 +93,35 @@
       Người bên kia đang gõ...
   </div>
   <!-- Input: Nhập và gửi tin nhắn -->
-  <div class="message-input mt-2 flex items-center flex-shrink-0 relative">
+ <div class="form-container">
+    <div class="file-preview-container">
+      <div
+        v-for="(file, index) in previewFiles"
+        :key="index"
+        class="file-preview"
+      >
+        <img
+          v-if="file.type.startsWith('image/')"
+          :src="file.url"
+          alt="Preview"
+          class="preview-image"
+        />
+      <video
+      v-else-if="file.type.startsWith('video/')"
+      :src="file.url"
+      controls
+      class="preview-video"
+    >
+    </video>
+        <button
+          @click="removePreview(index)"
+          class="remove-preview-button"
+        >
+          X
+        </button>
+      </div>
+   </div>
+   <div class="message-input mt-2 flex items-center flex-shrink-0 relative">
     <div class="input-container relative flex-1">
       <input
         v-model="newMessage"
@@ -148,7 +176,8 @@
     <button @click="sendMessage" class="ml-2 px-2 sm:px-4 py-1 sm:py-2 bg-blue-500 text-white rounded text-sm sm:text-base">
       <PaperAirplaneIcon class="h-6 w-6 text-white-500" />
     </button>
-  </div>
+   </div>
+ </div>
 </div>
 
 </template>
@@ -191,6 +220,7 @@ export default {
   },
   data() {
     return {
+      previewFiles: [], // Danh sách file preview,
       showMenu : false,
       showEmojiPicker: false,
       availableReactions: ['👍', '❤️', '😂', '😮', '😢', '😡'],
@@ -365,13 +395,52 @@ export default {
     },
   },
   methods: {
+    sendImage() {
+      // Mở trình chọn file
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*,video/*'; // Chỉ cho phép chọn ảnh và video
+      fileInput.multiple = true; // Cho phép chọn nhiều tệp
+      fileInput.addEventListener('change', (event) => {
+        const files = event.target.files;
+        this.handleFilePreview(files); // Gọi hàm xử lý preview
+      });
+      fileInput.click();
+    },
+    handleFilePreview(files) {
+      Array.from(files).forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          // Thêm preview vào danh sách
+          this.previewFiles.push({
+            name: file.name,
+            type: file.type,
+            url: e.target.result, // Đường dẫn preview
+            file: file, // File gốc để gửi
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    },
+    removePreview(index) {
+      // Xóa file khỏi danh sách preview
+      this.previewFiles.splice(index, 1);
+    },
+    sendSelectedFiles() {
+      this.previewFiles.forEach(async (fileObj) => {
+        try {
+          const formData = new FormData();
+          formData.append('file', fileObj.file); // Thêm file vào formData
+          formData.append('conversation_id', this.userInfo.conversation_id); // Thêm các trường liên quan
+          // await this.$axios.post('/api/send-media', formData);
+        } catch (error) {
+          console.error('Failed to send file:', fileObj.name, error);
+        }
+      });
+      this.previewFiles = []; // Xóa danh sách sau khi gửi
+    },
     toggleMenu() {
     this.showMenu = !this.showMenu;
-    },
-    sendImage() {
-      // Logic gửi ảnh
-      alert("Chức năng gửi ảnh đang phát triển.");
-      this.showMenu = false;
     },
     sendFile() {
       // Logic gửi file
@@ -438,6 +507,8 @@ export default {
       }
     },
     async scrollToBottomWithTrigger() {
+      await this.$nextTick(); // Chờ Vue render xong DOM
+
       const messageContent = this.$refs.messageContent;
       if (!messageContent) return;
 
@@ -686,6 +757,65 @@ export default {
 </script>
 
 <style scoped>
+.file-preview-container {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+  padding-left: 38px;
+  overflow-y: auto;
+  max-height: 220px;
+
+  /* Ẩn thanh cuộn */
+  scrollbar-width: none; /* Ẩn scrollbar trên Firefox */
+  -ms-overflow-style: none; /* Ẩn scrollbar trên IE/Edge */
+}
+
+.file-preview-container::-webkit-scrollbar {
+  display: none; /* Ẩn scrollbar trên Chrome, Safari và Edge */
+}
+
+.file-preview {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.preview-image,
+.preview-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.remove-preview-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: red;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+}
+
+.send-preview-button {
+  margin-top: 10px;
+  padding: 5px 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.send-preview-button:hover {
+  background-color: #0056b3;
+}
+
 .menu-fade-enter-active,
 .menu-fade-leave-active {
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -736,11 +866,15 @@ export default {
   display: none; /* Ẩn thanh cuộn trên Chrome */
 }
 
+.form-container{
+   padding-top: 1rem ;
+   background-color: white;
+   border-radius: 10px;
+}
+
 .message-input {
   flex-shrink: 0; /* Không co lại */
-  padding: 1rem;
-  border-top: 1px solid #e5e5e5;
-  background-color: white; /* Đảm bảo phần input không bị mờ hoặc ẩn */
+  padding:0 1rem 1rem 1rem;
   display: flex;
   align-items: center; /* Căn giữa nội dung theo trục ngang */
 }

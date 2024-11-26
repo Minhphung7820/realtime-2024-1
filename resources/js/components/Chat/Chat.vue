@@ -81,7 +81,10 @@ export default {
       this.dataMessage = {};
       this.$router.push(`/`);
     },
-    handleResize() {
+    displayChat() {
+      if (document.fullscreenElement || !document.fullscreenElement) {
+        return; // Nếu đang fullscreen, không làm gì cả
+      }
       this.isDesktop = window.innerWidth >= 640;
       if (this.isDesktop) {
         this.isChatOpen = false;
@@ -89,11 +92,8 @@ export default {
     },
   },
   mounted() {
-    window.addEventListener('resize', this.handleResize);
-  },
-  beforeDestroy() {
-    window.removeEventListener('resize', this.handleResize);
-  },
+    this.displayChat()
+  }
 };
 </script>
 

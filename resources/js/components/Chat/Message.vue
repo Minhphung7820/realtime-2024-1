@@ -117,7 +117,7 @@
           @click="removePreview(index)"
           class="remove-preview-button"
         >
-          X
+          <XMarkIcon class="h-6 w-6" />
         </button>
       </div>
    </div>
@@ -190,7 +190,8 @@ import {
   EllipsisVerticalIcon ,
   PhotoIcon,
   PaperClipIcon,
-  MicrophoneIcon
+  MicrophoneIcon,
+  XMarkIcon
   } from '@heroicons/vue/24/solid'
 import EmojiPicker from 'vue3-emoji-picker'
 import {
@@ -210,7 +211,8 @@ export default {
     EllipsisVerticalIcon,
     PhotoIcon,
     PaperClipIcon,
-    MicrophoneIcon
+    MicrophoneIcon,
+    XMarkIcon
   },
   props:{
       dataMessage:{
@@ -794,13 +796,12 @@ export default {
   position: absolute;
   top: 0;
   right: 0;
-  background: red;
-  color: white;
   border: none;
   border-radius: 50%;
   cursor: pointer;
   width: 20px;
   height: 20px;
+  color: red;
 }
 
 .send-preview-button {

@@ -868,7 +868,6 @@ export default {
 }
 
 .form-container{
-   padding-top: 1rem ;
    background-color: white;
    border-radius: 10px;
 }

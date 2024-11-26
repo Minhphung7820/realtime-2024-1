@@ -362,6 +362,7 @@ export default {
             // this.socket.emit('leave_conversation', this.userInfo.conversation_id);
             this.socket = null;
           }
+          this.previewFiles = [];
           this.showMenu = false;
           this.isLoading = true;
           this.messages = [];

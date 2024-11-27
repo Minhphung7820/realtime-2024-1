@@ -858,7 +858,7 @@ export default {
                     messageSend = this.newMessage;
                 }
 
-                if(this.newMessage.trim() !== ''){
+                if(this.newMessage.trim() !== '' && !fileSend){
                   const response = await this.$axios.post(`/api/save-message`, {
                       conversation_id: this.userInfo.conversation_id,
                       content: messageSend,
@@ -873,14 +873,43 @@ export default {
                       message_id: response.data.id,
                       type: 'text'
                   });
-                }
-
-                if(fileSend){
+                }else if(this.newMessage.trim() === '' && fileSend){
                   const response = await this.$axios.post(`/api/save-message`, {
                       conversation_id: this.userInfo.conversation_id,
                       content: fileSend,
                       type: 'file',
                       type_conversation : this.dataMessage.type
+                  });
+
+                  this.socket.emit(`send_message`, {
+                      conversation_id: this.userInfo.conversation_id,
+                      sender_id: this.$userProfile.id,
+                      content: fileSend,
+                      message_id: response.data.id,
+                      type: 'file'
+                  });
+                }else if(this.newMessage.trim() !== '' && fileSend){
+                  const response = await this.$axios.post(`/api/save-message-with-file`, {
+                    message_text : {
+                      conversation_id: this.userInfo.conversation_id,
+                      content: messageSend,
+                      type: 'text',
+                      type_conversation : this.dataMessage.type
+                     },
+                    message_file : {
+                      conversation_id: this.userInfo.conversation_id,
+                      content: fileSend,
+                      type: 'file',
+                      type_conversation : this.dataMessage.type
+                     }
+                  });
+
+                  this.socket.emit(`send_message`, {
+                      conversation_id: this.userInfo.conversation_id,
+                      sender_id: this.$userProfile.id,
+                      content: messageSend,
+                      message_id: response.data.id,
+                      type: 'text'
                   });
 
                   this.socket.emit(`send_message`, {

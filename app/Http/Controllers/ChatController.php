@@ -187,6 +187,41 @@ class ChatController extends Controller
         }
     }
 
+    public function saveMessageWithFile(Request $request)
+    {
+        try {
+            return DB::transaction(function () use ($request) {
+                $user_id = auth()->guard('api')->id();
+                $messageText = $request['message_text'];
+                $messageFile = $request['message_file'];
+                $dataInsert = [
+                    [
+                        'conversation_id' => $messageText['conversation_id'],
+                        'sender_id' => $user_id,
+                        'content' => json_encode($messageText['content']),
+                        'type' => $messageText['type'],
+                        'created_at' => now()->format('Y-m-d H:i:s')
+                    ],
+                    [
+                        'conversation_id' => $messageFile['conversation_id'],
+                        'sender_id' => $user_id,
+                        'content' => json_encode($messageFile['content']),
+                        'type' => $messageFile['type'],
+                        'created_at' => now()->format('Y-m-d H:i:s')
+                    ]
+                ];
+                Message::insert(
+                    $dataInsert
+                );
+                return true;
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function listConversation(Request $request)
     {
         try {

@@ -487,7 +487,13 @@ export default {
       this.showMenu = false;
     },
     async handleFilePreview(files) {
+      const MAX_SIZE = 20 * 1024 * 1024; // Kích thước tối đa 20MB
       const newPreviews = Array.from(files).map((file) => {
+        if (file.size > MAX_SIZE) {
+          alert(`File ${file.name} vượt quá kích thước tối đa là 20MB. Vui lòng chọn file nhỏ hơn.`);
+          return null; // Bỏ qua file vượt kích thước
+        }
+
         const reader = new FileReader();
         const preview = {
           name: file.name,
@@ -505,7 +511,8 @@ export default {
         return preview;
       });
 
-      this.previewFiles.push(...newPreviews);
+      // Loại bỏ file null (do vượt kích thước)
+      this.previewFiles.push(...newPreviews.filter((file) => file !== null));
 
       try {
         // Tải file lên API song song

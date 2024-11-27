@@ -37,12 +37,12 @@
           <div v-if="msg.type === 'file'">
             <div v-for="(item, index) in JSON.parse(msg.content)" :key="index">
               <!-- Nếu là video -->
-              <video v-if="item.type.startsWith('video/')" controls class="preview-video-message">
+              <video v-if="item.type.startsWith('video/')" controls class="preview-video-message" @click="openPreview(item)">
                 <source :src="item.url" :type="item.type" />
                 Trình duyệt của bạn không hỗ trợ video.
               </video>
               <!-- Nếu là hình ảnh -->
-              <img v-else-if="item.type.startsWith('image/')" :src="item.url" alt="Image" class="preview-image-message" />
+              <img v-else-if="item.type.startsWith('image/')" :src="item.url" alt="Image" class="preview-image-message" @click="openPreview(item)" />
               <!-- Loại khác -->
               <p v-else>
                 File không hỗ trợ: {{ item.type }}
@@ -205,6 +205,37 @@
     </button>
    </div>
  </div>
+
+ <!-- Modal Preview -->
+ <div
+      v-if="showPreview"
+      class="preview-modal fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+    >
+      <div class="preview-content relative">
+        <button
+          @click="closePreview"
+          class="preview-modal-close"
+        >
+          &times;
+        </button>
+        <!-- Hiển thị hình ảnh -->
+        <img
+          v-if="previewItem.type.startsWith('image/')"
+          :src="previewItem.url"
+          alt="Preview Image"
+          class="max-w-full max-h-screen"
+        />
+        <!-- Hiển thị video -->
+        <video
+          v-else-if="previewItem.type.startsWith('video/')"
+          controls
+          class="max-w-full max-h-screen"
+        >
+          <source :src="previewItem.url" :type="previewItem.type" />
+          Trình duyệt của bạn không hỗ trợ video.
+        </video>
+      </div>
+ </div>
 </div>
 
 </template>
@@ -249,6 +280,8 @@ export default {
   },
   data() {
     return {
+      previewItem: null,
+      showPreview: false,
       previewFiles: [], // Danh sách file preview,
       showMenu : false,
       showEmojiPicker: false,
@@ -390,6 +423,8 @@ export default {
             // this.socket.emit('leave_conversation', this.userInfo.conversation_id);
             this.socket = null;
           }
+          this.previewItem = null;
+          this.showPreview = false;
           this.previewFiles = [];
           this.showMenu = false;
           this.isLoading = true;
@@ -426,6 +461,15 @@ export default {
     },
   },
   methods: {
+    openPreview(item) {
+      this.previewItem = item;
+      this.showPreview = true;
+    },
+    // Đóng modal preview
+    closePreview() {
+      this.showPreview = false;
+      this.previewItem = null;
+    },
     areAllFilesUploaded() {
       return this.previewFiles.every((file) => !file.isUploading);
     },
@@ -875,6 +919,82 @@ export default {
 </script>
 
 <style scoped>
+/* Nút đóng (X) bên ngoài modal */
+.preview-modal-close {
+  position: fixed; /* Giữ nút cố định ở một góc */
+  top: 10px; /* Khoảng cách từ trên cùng của trang */
+  right: 10px; /* Khoảng cách từ phải của trang */
+  background-color: rgba(0, 0, 0, 0.8); /* Màu nền đen trong suốt */
+  color: white; /* Màu chữ trắng */
+  width: 40px; /* Chiều rộng nút */
+  height: 40px; /* Chiều cao nút */
+  border: none; /* Xóa viền */
+  border-radius: 50%; /* Bo tròn để tạo hình tròn */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem; /* Kích thước chữ lớn */
+  cursor: pointer;
+  z-index: 100; /* Luôn nổi trên các thành phần khác */
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.preview-modal-close:hover {
+  transform: scale(1.1); /* Phóng to nhẹ khi hover */
+  background-color: rgba(255, 0, 0, 0.9); /* Đổi nền sang đỏ đậm */
+}
+
+/* Đối với toàn bộ modal */
+.preview-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9); /* Làm tối nền modal */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  overflow: auto; /* Cho phép cuộn nếu nội dung lớn */
+}
+
+.preview-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+  overflow: auto; /* Cho phép cuộn nội dung trong modal */
+  background: rgba(255, 255, 255, 0.05); /* Màu nền nhạt trong suốt */
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); /* Đổ bóng mềm */
+}
+
+/* Tùy chỉnh thanh cuộn */
+.preview-modal::-webkit-scrollbar {
+  width: 12px; /* Độ rộng của thanh cuộn */
+}
+
+.preview-modal::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1); /* Màu nền track thanh cuộn */
+  border-radius: 6px;
+}
+
+.preview-modal::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4); /* Màu thanh cuộn */
+  border-radius: 6px; /* Bo tròn góc thanh cuộn */
+  border: 2px solid rgba(0, 0, 0, 0.9); /* Viền bên ngoài thanh cuộn */
+}
+
+.preview-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.6); /* Màu khi hover vào thanh cuộn */
+}
+
+/* Đối với trình duyệt không hỗ trợ Webkit (Firefox) */
+.preview-modal {
+  scrollbar-width: thin; /* Đặt thanh cuộn mỏng */
+  scrollbar-color: rgba(255, 255, 255, 0.4) rgba(0, 0, 0, 0.9); /* Thanh cuộn và track */
+}
+
 .preview-image-message,
 .preview-video-message {
   width: 200px; /* Chiều rộng cố định */

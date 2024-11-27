@@ -114,6 +114,12 @@
       class="preview-video"
     >
     </video>
+       <div
+        v-if="file.isUploading"
+        class="absolute inset-0 bg-gray-100 bg-opacity-70 flex items-center justify-center z-10"
+      >
+        <div class="spinner border-4 border-t-4 border-gray-300 rounded-full w-6 h-6 animate-spin"></div>
+      </div>
         <button
           @click="removePreview(index)"
           class="remove-preview-button"
@@ -399,6 +405,9 @@ export default {
     },
   },
   methods: {
+    areAllFilesUploaded() {
+      return this.previewFiles.every((file) => !file.isUploading);
+    },
     sendImage() {
       // Mở trình chọn file
       const fileInput = document.createElement('input');
@@ -436,6 +445,8 @@ export default {
         // Tải file lên API song song
         await Promise.all(
           this.previewFiles.map(async (file) => {
+            if (!file.isUploading) return; // Bỏ qua file đã tải xong
+
             try {
               // Xác định folder
               const folder = file.type.startsWith('image/')
@@ -717,6 +728,10 @@ export default {
       }
     },
     async sendMessage() {
+        if (!this.areAllFilesUploaded()) {
+          alert('Vui lòng đợi tất cả file được tải xong trước khi gửi tin nhắn.');
+          return;
+        }
         if (this.newMessage.trim() !== '') {
             try {
                 let messageSend;

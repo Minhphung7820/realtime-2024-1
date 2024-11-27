@@ -877,27 +877,55 @@ export default {
 <style scoped>
 .preview-image-message,
 .preview-video-message {
-  max-width: 100%; /* Đảm bảo không vượt quá kích thước khung */
-  max-height: 150px; /* Giới hạn chiều cao */
-  width: auto; /* Điều chỉnh theo tỉ lệ */
-  height: auto; /* Điều chỉnh theo tỉ lệ */
-  object-fit: cover; /* Cắt ảnh hoặc video vừa khung */
-  border-radius: 8px; /* Bo tròn góc */
-  border: 1px solid #ccc; /* Viền xám nhẹ */
+  width: 200px; /* Chiều rộng cố định */
+  height: 120px; /* Chiều cao cố định */
+  border-radius: 12px; /* Bo tròn góc mềm mại */
+  object-fit: cover; /* Đảm bảo video/hình ảnh vừa khung */
+  border: 1px solid #ccc; /* Viền mỏng màu xám */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Đổ bóng mềm */
+  overflow: hidden;
+  position: relative;
+  background-color: #f9f9f9; /* Màu nền nhạt */
 }
 
+/* Căn chỉnh video và hình ảnh cho từng tin nhắn */
 .friend-message .preview-image-message,
 .friend-message .preview-video-message,
 .my-message .preview-image-message,
 .my-message .preview-video-message {
-  display: block; /* Đảm bảo căn chỉnh theo dòng block */
-  margin: 5px 0; /* Khoảng cách trên dưới */
+  display: block; /* Đảm bảo các phần tử nằm trên từng dòng */
+  margin: 8px; /* Khoảng cách giữa các tin nhắn và file */
+  max-width: 90%; /* Đảm bảo không tràn ra ngoài khung */
+}
+
+/* Hiệu ứng hover (tăng thêm tính thẩm mỹ khi người dùng rê chuột) */
+.preview-video-message:hover,
+.preview-image-message:hover {
+  transform: scale(1.05); /* Phóng to nhẹ khi hover */
+  transition: transform 0.3s ease; /* Thêm hiệu ứng mượt */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Tăng đổ bóng khi hover */
+}
+
+/* Video thumbnail (nếu muốn tuỳ chỉnh thêm) */
+.preview-video-message::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 50px;
+  background: url('https://cdn-icons-png.flaticon.com/512/725/725003.png') no-repeat center center; /* Biểu tượng phát */
+  background-size: contain;
+  opacity: 0.8;
+  pointer-events: none; /* Không ảnh hưởng đến click */
 }
 
 .file-preview.opacity-50 {
   opacity: 0.5;
   pointer-events: none; /* Ngăn tương tác khi đang tải */
 }
+
 .file-preview-container {
   display: flex;
   gap: 10px;

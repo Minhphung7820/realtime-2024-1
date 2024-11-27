@@ -33,7 +33,27 @@
     <div v-for="(msg, index) in messages" :key="index" class="mb-2 each-message">
       <div :class="msg.sender === 'me' ? 'my-message-container' : 'friend-message-container'">
         <div :class="msg.sender === 'me' ? 'my-message relative group' : 'friend-message relative group'">
-          <p>{{ msg.content }}</p>
+          <!-- Kiểm tra nếu msg.content là mảng -->
+          <div v-if="msg.type === 'file'">
+            <div v-for="(item, index) in JSON.parse(msg.content)" :key="index">
+              <!-- Nếu là video -->
+              <video v-if="item.type.startsWith('video/')" controls class="preview-video">
+                <source :src="item.url" :type="item.type" />
+                Trình duyệt của bạn không hỗ trợ video.
+              </video>
+              <!-- Nếu là hình ảnh -->
+              <img v-else-if="item.type.startsWith('image/')" :src="item.url" alt="Image" class="preview-image" />
+              <!-- Loại khác -->
+              <p v-else>
+                File không hỗ trợ: {{ item.type }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Nếu msg.content không phải là mảng -->
+          <p v-else>
+            {{ msg.content }}
+          </p>
           <!-- Reactions -->
           <div v-if="msg.reactions && msg.reactions.length > 0" class="reactions flex items-center mt-1">
             <div v-for="(reaction, i) in getTopReactions(msg.reactions)" :key="i" class="reaction flex items-center mr-2">
@@ -285,7 +305,8 @@ export default {
                   sender_id:e.sender_id ,
                   reactions : [],
                   total_reactions : 0,
-                  id: e.message_id
+                  id: e.message_id,
+                  type : e.type
             });
             // Cuộn xuống cuối và tự động kích hoạt trigger nếu cần
             await this.scrollToBottom();
@@ -773,8 +794,9 @@ export default {
                               url: value.url,
                               type: value.type,
                             }));
+                            const fileJson = JSON.stringify(files);
                             const filesCrypted = await encryptMessageWithPublicKey(
-                              files,
+                              fileJson,
                               await importPublicKey(user.publicKey)
                             );
                             json[user.id] = filesCrypted;
@@ -805,12 +827,11 @@ export default {
                       sender_id: this.$userProfile.id,
                       content: messageSend,
                       message_id: response.data.id,
+                      type: 'text'
                   });
                 }
 
                 if(fileSend){
-                  console.log(fileSend);
-
                   const response = await this.$axios.post(`/api/save-message`, {
                       conversation_id: this.userInfo.conversation_id,
                       content: fileSend,
@@ -823,6 +844,7 @@ export default {
                       sender_id: this.$userProfile.id,
                       content: fileSend,
                       message_id: response.data.id,
+                      type: 'file'
                   });
                 }
                 this.viewers = [];

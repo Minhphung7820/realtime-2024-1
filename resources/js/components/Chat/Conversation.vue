@@ -138,7 +138,7 @@ export default {
                           privateKey
                     );
                     //
-                    matchingConversation.lastMessage = decryptedLastMessage;
+                    matchingConversation.lastMessage = e.type === 'text' ? decryptedLastMessage : 'Đã gửi tệp';
                     matchingConversation.unread = (matchingConversation.unread || 0) + 1;
                     matchingConversation.sender = 'friend';
                     this.moveConvToTop({id:e.conversation_id});
@@ -181,7 +181,14 @@ export default {
         if (conversationIndex !== -1) {
           // Nếu đã tồn tại, di chuyển cuộc trò chuyện lên đầu
           if (objectConv.content) {
-            this.conversations[conversationIndex].lastMessage = objectConv.content;
+
+            let contentFormat;
+            if(objectConv.type === 'text'){
+              contentFormat = objectConv.content;
+            }else{
+              contentFormat = `Đã gửi tệp`;
+            }
+            this.conversations[conversationIndex].lastMessage = contentFormat;
           }
           const [movedConversation] = this.conversations.splice(conversationIndex, 1);
           this.conversations.unshift(movedConversation);
@@ -219,14 +226,18 @@ export default {
               let lastMessageDecrypt;
               try {
                 if (conversation.lastMessage) {
-                  const encryptedContent = JSON.parse(conversation.lastMessage)[this.$userProfile.id];
-                  if (encryptedContent) {
-                    const privateKey = await importPrivateKey(localStorage.getItem("privateKey"));
-                    const decryptedLastMessage = await decryptMessageWithPrivateKey(
-                      encryptedContent,
-                      privateKey
-                    );
-                    lastMessageDecrypt = decryptedLastMessage;
+                  if(conversation.typeLastMessage === 'text'){
+                     const encryptedContent = JSON.parse(conversation.lastMessage)[this.$userProfile.id];
+                     if (encryptedContent) {
+                      const privateKey = await importPrivateKey(localStorage.getItem("privateKey"));
+                      const decryptedLastMessage = await decryptMessageWithPrivateKey(
+                        encryptedContent,
+                        privateKey
+                      );
+                      lastMessageDecrypt = decryptedLastMessage;
+                     }
+                  }else{
+                     lastMessageDecrypt = `Đã gửi tệp`;
                   }
                 } else {
                   lastMessageDecrypt = null; // Không có tin nhắn cuối

@@ -484,6 +484,7 @@ export default {
         await this.handleFilePreview(files); // Gọi hàm xử lý preview
       });
       fileInput.click();
+      this.showMenu = false;
     },
     async handleFilePreview(files) {
       const newPreviews = Array.from(files).map((file) => {
@@ -800,6 +801,7 @@ export default {
             try {
                 let messageSend;
                 let fileSend;
+                let typeMessage;
                 if (this.dataMessage.type === 'private') {
                     let message = this.newMessage;
                     try {
@@ -859,6 +861,7 @@ export default {
                 }
 
                 if(this.newMessage.trim() !== '' && !fileSend){
+                  typeMessage = 'text';
                   const response = await this.$axios.post(`/api/save-message`, {
                       conversation_id: this.userInfo.conversation_id,
                       content: messageSend,
@@ -874,6 +877,7 @@ export default {
                       type: 'text'
                   });
                 }else if(this.newMessage.trim() === '' && fileSend){
+                  typeMessage = 'file';
                   const response = await this.$axios.post(`/api/save-message`, {
                       conversation_id: this.userInfo.conversation_id,
                       content: fileSend,
@@ -889,6 +893,7 @@ export default {
                       type: 'file'
                   });
                 }else if(this.newMessage.trim() !== '' && fileSend){
+                  typeMessage = 'file';
                   const response = await this.$axios.post(`/api/save-message-with-file`, {
                     message_text : {
                       conversation_id: this.userInfo.conversation_id,
@@ -908,7 +913,7 @@ export default {
                       conversation_id: this.userInfo.conversation_id,
                       sender_id: this.$userProfile.id,
                       content: messageSend,
-                      message_id: response.data.id,
+                      message_id: response.data.text_message_id,
                       type: 'text'
                   });
 
@@ -916,14 +921,15 @@ export default {
                       conversation_id: this.userInfo.conversation_id,
                       sender_id: this.$userProfile.id,
                       content: fileSend,
-                      message_id: response.data.id,
+                      message_id: response.data.file_message_id,
                       type: 'file'
                   });
                 }
                 this.viewers = [];
                 this.$emit('move-conv-to-top', {
                     id: this.userInfo.conversation_id,
-                    content: this.newMessage,
+                    content: typeMessage === 'text' ? this.newMessage : fileSend,
+                    type: typeMessage
                 });
 
                 this.newMessage = '';

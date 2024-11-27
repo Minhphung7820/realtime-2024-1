@@ -93,7 +93,7 @@ class ChatController extends Controller
 
         // Lấy tin nhắn và subquery lấy viewers
         $messages = Message::with('reactions')->where('conversation_id', $conversationId)
-            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->select([
                 'messages.*',
                 DB::raw('(CASE WHEN sender_id = ' . $userId . ' THEN "me" ELSE "friends" END) as sender'),
@@ -194,26 +194,30 @@ class ChatController extends Controller
                 $user_id = auth()->guard('api')->id();
                 $messageText = $request['message_text'];
                 $messageFile = $request['message_file'];
-                $dataInsert = [
-                    [
-                        'conversation_id' => $messageText['conversation_id'],
-                        'sender_id' => $user_id,
-                        'content' => json_encode($messageText['content']),
-                        'type' => $messageText['type'],
-                        'created_at' => now()->format('Y-m-d H:i:s')
-                    ],
-                    [
-                        'conversation_id' => $messageFile['conversation_id'],
-                        'sender_id' => $user_id,
-                        'content' => json_encode($messageFile['content']),
-                        'type' => $messageFile['type'],
-                        'created_at' => now()->format('Y-m-d H:i:s')
-                    ]
-                ];
-                Message::insert(
-                    $dataInsert
-                );
-                return true;
+
+                // Tạo tin nhắn văn bản
+                $textMessage = Message::create([
+                    'conversation_id' => $messageText['conversation_id'],
+                    'sender_id' => $user_id,
+                    'content' => $messageText['content'],
+                    'type' => $messageText['type'],
+                    'created_at' => now()->format('Y-m-d H:i:s'),
+                ]);
+
+                // Tạo tin nhắn tệp
+                $fileMessage = Message::create([
+                    'conversation_id' => $messageFile['conversation_id'],
+                    'sender_id' => $user_id,
+                    'content' => $messageFile['content'],
+                    'type' => $messageFile['type'],
+                    'created_at' => now()->format('Y-m-d H:i:s'),
+                ]);
+
+                // Trả về hai ID của các bản ghi vừa thêm
+                return response()->json([
+                    'text_message_id' => $textMessage->id,
+                    'file_message_id' => $fileMessage->id,
+                ], 201);
             });
         } catch (\Exception $e) {
             return response()->json([
@@ -269,6 +273,7 @@ class ChatController extends Controller
                     DB::raw("CASE WHEN messages.sender_id = $userId THEN 'me' ELSE 'friend' END as sender"),
                     'conversations.id as conversation_id',
                     'messages.content as lastMessage',
+                    'messages.type as typeLastMessage',
                     'messages.created_at as sent_at',
                     DB::raw('COALESCE(messages_unread.total_unread, 0) as unread'),
                     DB::raw('false as isOnline') // Cột kiểm tra online (có thể bổ sung sau)

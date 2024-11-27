@@ -369,7 +369,7 @@ export default {
           });
 
           if(status === 'accepted'){
-              this.$emit('move-conv-to-top' , {id:responese.data.conversation_id,content : null});
+              this.$emit('move-conv-to-top' , {id:responese.data.conversation_id,content : null,type: 'text'});
           }
         } catch (error) {
           console.error('Failed to fetch online users:', error);

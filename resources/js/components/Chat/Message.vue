@@ -729,7 +729,6 @@ export default {
     },
     async sendMessage() {
         if (!this.areAllFilesUploaded()) {
-          alert('Vui lòng đợi tất cả file được tải xong trước khi gửi tin nhắn.');
           return;
         }
         if (this.newMessage.trim() !== '') {

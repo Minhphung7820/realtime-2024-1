@@ -652,7 +652,7 @@ export default {
     scrollLoadMoreMessage() {
       const messageContent = this.$refs.messageContent;
       if(!messageContent) return;
-      const isAtTop = Math.ceil(-(messageContent.scrollTop) + messageContent.clientHeight) >= messageContent.scrollHeight;
+      const isAtTop = Math.ceil(-(messageContent.scrollTop) + messageContent.clientHeight + 1) >= messageContent.scrollHeight;
 
       if (
         isAtTop // Khi cuộn lên đầu

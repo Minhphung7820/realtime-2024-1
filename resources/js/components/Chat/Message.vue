@@ -99,6 +99,7 @@
         v-for="(file, index) in previewFiles"
         :key="index"
         class="file-preview"
+        :class="{'opacity-50': file.isUploading}"
       >
         <img
           v-if="file.type.startsWith('image/')"
@@ -404,43 +405,69 @@ export default {
       fileInput.type = 'file';
       fileInput.accept = 'image/*,video/*'; // Chỉ cho phép chọn ảnh và video
       fileInput.multiple = true; // Cho phép chọn nhiều tệp
-      fileInput.addEventListener('change', (event) => {
+      fileInput.addEventListener('change', async (event) => {
         const files = event.target.files;
-        this.handleFilePreview(files); // Gọi hàm xử lý preview
+        await this.handleFilePreview(files); // Gọi hàm xử lý preview
       });
       fileInput.click();
     },
-    handleFilePreview(files) {
-      Array.from(files).forEach((file) => {
+    async handleFilePreview(files) {
+      const newPreviews = Array.from(files).map((file) => {
         const reader = new FileReader();
+        const preview = {
+          name: file.name,
+          type: file.type,
+          url: '', // Chờ FileReader xử lý
+          file, // File gốc
+          isUploading: true, // Đang tải
+        };
+
         reader.onload = (e) => {
-          // Thêm preview vào danh sách
-          this.previewFiles.push({
-            name: file.name,
-            type: file.type,
-            url: e.target.result, // Đường dẫn preview
-            file: file, // File gốc để gửi
-          });
+          preview.url = e.target.result; // Gắn URL tạm thời
         };
         reader.readAsDataURL(file);
+
+        return preview;
       });
+
+      this.previewFiles.push(...newPreviews);
+
+      try {
+        // Tải file lên API song song
+        await Promise.all(
+          this.previewFiles.map(async (file) => {
+            try {
+              // Xác định folder
+              const folder = file.type.startsWith('image/')
+                ? 'images'
+                : file.type.startsWith('video/')
+                ? 'videos'
+                : 'others';
+
+              const formData = new FormData();
+              formData.append('file', file.file);
+              formData.append('folder', folder);
+
+              // Gọi API upload file
+              const response = await this.$axios.post(`/api/upload-file`, formData);
+              const data = response.data;
+
+              // Cập nhật URL từ API
+              file.url = data.url;
+            } catch (error) {
+              console.error('Error uploading file:', error);
+            } finally {
+              file.isUploading = false; // Hoàn tất trạng thái (thành công hoặc thất bại)
+            }
+          })
+        );
+      } catch (error) {
+        console.error('Error during file uploads:', error);
+      }
     },
     removePreview(index) {
       // Xóa file khỏi danh sách preview
       this.previewFiles.splice(index, 1);
-    },
-    sendSelectedFiles() {
-      this.previewFiles.forEach(async (fileObj) => {
-        try {
-          const formData = new FormData();
-          formData.append('file', fileObj.file); // Thêm file vào formData
-          formData.append('conversation_id', this.userInfo.conversation_id); // Thêm các trường liên quan
-          // await this.$axios.post('/api/send-media', formData);
-        } catch (error) {
-          console.error('Failed to send file:', fileObj.name, error);
-        }
-      });
-      this.previewFiles = []; // Xóa danh sách sau khi gửi
     },
     toggleMenu() {
     this.showMenu = !this.showMenu;
@@ -760,6 +787,10 @@ export default {
 </script>
 
 <style scoped>
+.file-preview.opacity-50 {
+  opacity: 0.5;
+  pointer-events: none; /* Ngăn tương tác khi đang tải */
+}
 .file-preview-container {
   display: flex;
   gap: 10px;

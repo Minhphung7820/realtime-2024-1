@@ -731,27 +731,59 @@ export default {
         if (!this.areAllFilesUploaded()) {
           return;
         }
-        if (this.newMessage.trim() !== '') {
+        if (this.newMessage.trim() !== '' || this.previewFiles.length > 0) {
             try {
                 let messageSend;
+                let fileSend;
                 if (this.dataMessage.type === 'private') {
                     let message = this.newMessage;
                     try {
                         // Mã hóa tin nhắn
-                        const senderEncryptedMessage = await encryptMessageWithPublicKey(
-                            message,
-                            await importPublicKey(this.$userProfile.public_key)
-                        );
-                        const receiverEncryptedMessage = await encryptMessageWithPublicKey(
-                            message,
-                            await importPublicKey(this.userInfo.publicKey)
-                        );
+                        if(this.newMessage.trim() !== ''){
+                          const senderEncryptedMessage = await encryptMessageWithPublicKey(
+                              message,
+                              await importPublicKey(this.$userProfile.public_key)
+                          );
+                          const receiverEncryptedMessage = await encryptMessageWithPublicKey(
+                              message,
+                              await importPublicKey(this.userInfo.publicKey)
+                          );
 
-                        messageSend = {
-                          [this.$userProfile.id]: senderEncryptedMessage,
-                          [this.userInfo.id]: receiverEncryptedMessage,
-                        };
+                          messageSend = {
+                            [this.$userProfile.id]: senderEncryptedMessage,
+                            [this.userInfo.id]: receiverEncryptedMessage,
+                          };
+                        }
 
+                        if(this.previewFiles.length > 0){
+                           const users = [
+                            {
+                              id: this.$userProfile.id,
+                              publicKey: this.$userProfile.public_key
+                            },
+                            {
+                              id: this.userInfo.id,
+                              publicKey: this.userInfo.publicKey
+                            }
+                           ];
+                           const json = {};
+
+                           const promises = users.map(async (user) => {
+                            const files = this.previewFiles.map((value) => ({
+                              url: value.url,
+                              type: value.type,
+                            }));
+                            const filesCrypted = await encryptMessageWithPublicKey(
+                              files,
+                              await importPublicKey(user.publicKey)
+                            );
+                            json[user.id] = filesCrypted;
+                           });
+
+                           await Promise.all(promises);
+                           fileSend = json;
+
+                        }
                     } catch (encryptionError) {
                         console.error("Error during encryption:", encryptionError);
                         throw encryptionError; // Ném lỗi để xử lý bên dưới
@@ -760,20 +792,39 @@ export default {
                     messageSend = this.newMessage;
                 }
 
-                const response = await this.$axios.post(`/api/save-message`, {
-                    conversation_id: this.userInfo.conversation_id,
-                    content: messageSend,
-                    type: 'text',
-                    type_conversation : this.dataMessage.type
-                });
+                if(this.newMessage.trim() !== ''){
+                  const response = await this.$axios.post(`/api/save-message`, {
+                      conversation_id: this.userInfo.conversation_id,
+                      content: messageSend,
+                      type: 'text',
+                      type_conversation : this.dataMessage.type
+                  });
 
-                this.socket.emit(`send_message`, {
-                    conversation_id: this.userInfo.conversation_id,
-                    sender_id: this.$userProfile.id,
-                    content: messageSend,
-                    message_id: response.data.id,
-                });
+                  this.socket.emit(`send_message`, {
+                      conversation_id: this.userInfo.conversation_id,
+                      sender_id: this.$userProfile.id,
+                      content: messageSend,
+                      message_id: response.data.id,
+                  });
+                }
 
+                if(fileSend){
+                  console.log(fileSend);
+
+                  const response = await this.$axios.post(`/api/save-message`, {
+                      conversation_id: this.userInfo.conversation_id,
+                      content: fileSend,
+                      type: 'file',
+                      type_conversation : this.dataMessage.type
+                  });
+
+                  this.socket.emit(`send_message`, {
+                      conversation_id: this.userInfo.conversation_id,
+                      sender_id: this.$userProfile.id,
+                      content: fileSend,
+                      message_id: response.data.id,
+                  });
+                }
                 this.viewers = [];
                 this.$emit('move-conv-to-top', {
                     id: this.userInfo.conversation_id,
@@ -781,6 +832,7 @@ export default {
                 });
 
                 this.newMessage = '';
+                this.previewFiles = [];
             } catch (error) {
                 console.error("Error in sendMessage function:", error);
             }

@@ -37,12 +37,12 @@
           <div v-if="msg.type === 'file'">
             <div v-for="(item, index) in JSON.parse(msg.content)" :key="index">
               <!-- Nếu là video -->
-              <video v-if="item.type.startsWith('video/')" controls class="preview-video">
+              <video v-if="item.type.startsWith('video/')" controls class="preview-video-message">
                 <source :src="item.url" :type="item.type" />
                 Trình duyệt của bạn không hỗ trợ video.
               </video>
               <!-- Nếu là hình ảnh -->
-              <img v-else-if="item.type.startsWith('image/')" :src="item.url" alt="Image" class="preview-image" />
+              <img v-else-if="item.type.startsWith('image/')" :src="item.url" alt="Image" class="preview-image-message" />
               <!-- Loại khác -->
               <p v-else>
                 File không hỗ trợ: {{ item.type }}
@@ -447,7 +447,7 @@ export default {
         const preview = {
           name: file.name,
           type: file.type,
-          url: '', // Chờ FileReader xử lý
+          url: 'https://static.thenounproject.com/png/4595376-200.png', // Chờ FileReader xử lý
           file, // File gốc
           isUploading: true, // Đang tải
         };
@@ -875,6 +875,25 @@ export default {
 </script>
 
 <style scoped>
+.preview-image-message,
+.preview-video-message {
+  max-width: 100%; /* Đảm bảo không vượt quá kích thước khung */
+  max-height: 150px; /* Giới hạn chiều cao */
+  width: auto; /* Điều chỉnh theo tỉ lệ */
+  height: auto; /* Điều chỉnh theo tỉ lệ */
+  object-fit: cover; /* Cắt ảnh hoặc video vừa khung */
+  border-radius: 8px; /* Bo tròn góc */
+  border: 1px solid #ccc; /* Viền xám nhẹ */
+}
+
+.friend-message .preview-image-message,
+.friend-message .preview-video-message,
+.my-message .preview-image-message,
+.my-message .preview-video-message {
+  display: block; /* Đảm bảo căn chỉnh theo dòng block */
+  margin: 5px 0; /* Khoảng cách trên dưới */
+}
+
 .file-preview.opacity-50 {
   opacity: 0.5;
   pointer-events: none; /* Ngăn tương tác khi đang tải */

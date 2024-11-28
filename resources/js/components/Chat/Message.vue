@@ -30,6 +30,11 @@
      Đang tải thêm tin nhắn...
     </div> -->
   <div v-else ref="messageContent" @scroll="scrollLoadMoreMessage" class="message-content flex-1 overflow-y-auto p-2">
+    <div v-if="isFriendTyping" class="typing-indicator flex items-center gap-2">
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+    </div>
     <div v-for="(msg, index) in messages" :key="index" class="mb-2 each-message">
       <div :class="msg.sender === 'me' ? 'my-message-container' : 'friend-message-container'">
         <div   :class="[
@@ -113,9 +118,6 @@
     </div>
   </div>
 
-  <div v-if="isFriendTyping" class="typing-indicator text-gray-500 italic mt-2">
-      Người bên kia đang gõ...
-  </div>
   <!-- Input: Nhập và gửi tin nhắn -->
  <div class="form-container">
     <div class="file-preview-container">
@@ -1434,5 +1436,44 @@ export default {
 .friend-message:hover .reaction-button-add-emoji{
   bottom: -12px; /* Căn dưới tin nhắn */
   left: -12px; /* Căn phải tin nhắn */
+}
+
+.typing-indicator {
+  display: flex;
+  background-color: #F0F0F0;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 18px;
+  width: 5rem;
+}
+.bubble {
+  width: 8px; /* Kích thước chấm */
+  height: 8px;
+  background-color: #ccc; /* Màu chấm */
+  border-radius: 50%; /* Làm chấm tròn */
+  animation: typing-wave 1.5s infinite ease-in-out;
+}
+
+/* Tạo hiệu ứng delay giữa các chấm */
+.bubble:nth-child(1) {
+  animation-delay: 0s;
+}
+.bubble:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.bubble:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Keyframes tạo hiệu ứng lượn sóng */
+@keyframes typing-wave {
+  0%, 100% {
+    transform: translateY(0px) scale(1); /* Vị trí ban đầu */
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-8px) scale(1.2); /* Lượn sóng lên trên */
+    opacity: 1; /* Đậm dần */
+  }
 }
 </style>

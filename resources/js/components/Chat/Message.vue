@@ -1256,7 +1256,7 @@ export default {
   min-width: 10%;
   word-wrap: break-word;
   font-size: 1.1rem;
-  text-align: right;
+  text-align: left;
   cursor: pointer;
 }
 

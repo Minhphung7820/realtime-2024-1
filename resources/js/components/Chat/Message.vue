@@ -32,7 +32,11 @@
   <div v-else ref="messageContent" @scroll="scrollLoadMoreMessage" class="message-content flex-1 overflow-y-auto p-2">
     <div v-for="(msg, index) in messages" :key="index" class="mb-2 each-message">
       <div :class="msg.sender === 'me' ? 'my-message-container' : 'friend-message-container'">
-        <div :class="msg.sender === 'me' ? 'my-message relative group' : 'friend-message relative group'">
+        <div   :class="[
+                  msg.sender === 'me' ? 'my-message relative group' : 'friend-message relative group',
+                  msg.type === 'file' ? 'file-message-box' : '',
+                  msg.reactions && msg.reactions.length > 0 ? 'message-have-reaction' : ''
+               ]">
           <!-- Kiểm tra nếu msg.content là mảng -->
           <div v-if="msg.type === 'file'">
             <div v-for="(item, index) in JSON.parse(msg.content)" :key="index">
@@ -55,14 +59,14 @@
             {{ msg.content }}
           </p>
           <!-- Reactions -->
-          <div v-if="msg.reactions && msg.reactions.length > 0" class="reactions flex items-center mt-1">
-            <div v-for="(reaction, i) in getTopReactions(msg.reactions)" :key="i" class="reaction flex items-center mr-2">
+          <div v-if="msg.reactions && msg.reactions.length > 0" class="reactions flex items-center">
+            <div v-for="(reaction, i) in getTopReactions(msg.reactions)" :key="i" class="reaction flex items-center">
               <span>{{ reaction.emoji }}</span>
-              <span class="ml-1 text-sm text-gray-600">{{ reaction.count }}</span>
+              <!-- <span class="text-sm text-gray-600">{{ reaction.count }}</span> -->
             </div>
-            <div class="total-reactions text-xs text-gray-500 ml-2">
+            <!-- <div class="total-reactions text-xs text-gray-500">
               {{ msg.total_reactions }}
-            </div>
+            </div> -->
           </div>
              <!-- Nút thêm reaction (hiển thị khi isActive là true) -->
           <div
@@ -1039,12 +1043,12 @@ export default {
 
 .preview-image-message,
 .preview-video-message {
-  width: 200px; /* Chiều rộng cố định */
-  height: 120px; /* Chiều cao cố định */
+  width: 280px; /* Chiều rộng cố định */
+  height: 200px; /* Chiều cao cố định */
   border-radius: 12px; /* Bo tròn góc mềm mại */
   object-fit: cover; /* Đảm bảo video/hình ảnh vừa khung */
   border: 1px solid #ccc; /* Viền mỏng màu xám */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Đổ bóng mềm */
+  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); */
   overflow: hidden;
   position: relative;
   background-color: #f9f9f9; /* Màu nền nhạt */
@@ -1056,17 +1060,15 @@ export default {
 .my-message .preview-image-message,
 .my-message .preview-video-message {
   display: block; /* Đảm bảo các phần tử nằm trên từng dòng */
-  margin: 8px; /* Khoảng cách giữa các tin nhắn và file */
-  max-width: 90%; /* Đảm bảo không tràn ra ngoài khung */
 }
 
 /* Hiệu ứng hover (tăng thêm tính thẩm mỹ khi người dùng rê chuột) */
-.preview-video-message:hover,
+/* .preview-video-message:hover,
 .preview-image-message:hover {
-  transform: scale(1.05); /* Phóng to nhẹ khi hover */
-  transition: transform 0.3s ease; /* Thêm hiệu ứng mượt */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Tăng đổ bóng khi hover */
-}
+  transform: scale(1.05);
+  transition: transform 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+} */
 
 /* Video thumbnail (nếu muốn tuỳ chỉnh thêm) */
 .preview-video-message::before {
@@ -1245,12 +1247,12 @@ export default {
 /* Tin nhắn của tôi */
 .my-message {
   background-color: #d1e7ff;
-  padding: 6px 8px;
   border-radius: 8px;
   display: inline-block;
   max-width: 85%;
+  min-width: 10%;
   word-wrap: break-word;
-  font-size: 0.875rem;
+  font-size: 1.1rem;
   text-align: right;
   cursor: pointer;
 }
@@ -1258,14 +1260,24 @@ export default {
 /* Tin nhắn của bạn bè */
 .friend-message {
   background-color: #e2e3e5;
-  padding: 6px 8px;
   border-radius: 8px;
   display: inline-block;
   max-width: 85%;
+  min-width: 10%;
   word-wrap: break-word;
-  font-size: 0.875rem;
+  font-size: 1.1rem;
   text-align: left;
   cursor: pointer;
+}
+
+.file-message-box{
+  padding: 0 !important;
+  background: none;
+}
+.file-message-box >image{
+  width: 100% !important;
+  height: 100% !important;
+
 }
 
 .seen-avatars {
@@ -1323,14 +1335,13 @@ export default {
 .my-message,
 .friend-message {
   position: relative;
-
+  padding: 8px;
 }
 /* Nút thêm reaction (dấu cộng) */
 .reaction-button-add-emoji {
   text-align: center;
   position: absolute;
   justify-content: center;
-  padding-top: 3px;
   bottom: -12px; /* Căn dưới tin nhắn */
   right: -12px; /* Căn phải tin nhắn */
   width: 30px; /* Kích thước nút */
@@ -1348,15 +1359,35 @@ export default {
 .reactions {
   display: flex;
   align-items: center;
+  position: absolute;
+  width: auto;
+  margin-top: -5px;
+  border-radius: 20px;
+}
+
+.file-message-box  .reactions{
+  z-index: 10;
+  bottom: -10px;
+}
+
+.my-message .reactions{
+  left: 0 !important;
+}
+
+.friend-message .reactions{
+  right: -9px !important;
+}
+
+.message-have-reaction{
+ margin-bottom: 20px;
 }
 
 .reaction {
   display: flex;
   align-items: center;
-  font-size: 0.875rem;
-  padding: 2px 4px;
-  background-color: #f1f5f9;
+  font-size: 1rem;
   border-radius: 4px;
+  margin-left:-8px ;
 }
 
 .reaction-button {

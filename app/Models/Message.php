@@ -33,6 +33,7 @@ class Message extends Model
     {
         return $this->hasMany(Reaction::class)
             ->selectRaw('message_id, emoji, COUNT(*) as count')
+            ->orderBy('count', 'desc')
             ->groupBy('message_id', 'emoji');
     }
 }

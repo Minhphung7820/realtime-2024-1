@@ -977,7 +977,6 @@ export default {
   border: none; /* Xóa viền */
   border-radius: 50%; /* Bo tròn để tạo hình tròn */
   display: flex;
-  align-items: center;
   justify-content: center;
   font-size: 1.5rem; /* Kích thước chữ lớn */
   cursor: pointer;

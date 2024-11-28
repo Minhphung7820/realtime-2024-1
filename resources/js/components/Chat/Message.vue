@@ -1248,10 +1248,11 @@ export default {
 
 /* Tin nhắn của tôi */
 .my-message {
-  background-color: #d1e7ff;
+  background-color: #0084FF;
   border-radius: 8px;
   display: inline-block;
   max-width: 85%;
+  color: white;
   min-width: 10%;
   word-wrap: break-word;
   font-size: 1.1rem;
@@ -1261,7 +1262,7 @@ export default {
 
 /* Tin nhắn của bạn bè */
 .friend-message {
-  background-color: #e2e3e5;
+  background-color: #F0F0F0;
   border-radius: 8px;
   display: inline-block;
   max-width: 85%;

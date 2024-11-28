@@ -5,7 +5,7 @@
       <img
         :src="user.avatar"
         alt="Avatar"
-        class="rounded-full w-16 h-16 sm:w-20 sm:h-20 object-cover border-2 border-gray-300"
+        class="rounded-full w-16 h-16 sm:w-20 sm:h-20 object-cover border-2 border-gray-300 avatar-message"
       />
       <span
         class="absolute bottom-1 right-1 w-4 h-4 rounded-full"
@@ -94,6 +94,10 @@ export default {
 </script>
 
 <style scoped>
+.avatar-message{
+  object-fit: cover;
+}
+
 .profile-container {
   display: flex;
   align-items: center;

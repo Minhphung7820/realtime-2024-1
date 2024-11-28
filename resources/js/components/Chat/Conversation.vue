@@ -16,7 +16,7 @@
           <!-- Avatar and status dot container -->
           <div class="relative mr-3">
             <!-- Avatar -->
-            <img :src="conversation.avatar" alt="Avatar" class="w-10 h-10 rounded-full" />
+            <img :src="conversation.avatar" alt="Avatar" class="w-10 h-10 rounded-full avatar-message" />
 
             <!-- Trạng thái online/offline -->
             <span
@@ -288,6 +288,9 @@ export default {
 </script>
 
 <style scoped>
+.avatar-message{
+  object-fit: cover;
+}
 /* Định nghĩa hiệu ứng chuyển động */
 .smooth-move-enter-active,
 .smooth-move-leave-active {

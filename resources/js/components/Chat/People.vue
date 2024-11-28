@@ -49,7 +49,7 @@
           <!-- Avatar and status dot container -->
           <div class="relative mr-3">
             <!-- Avatar -->
-            <img :src="person.avatar" alt="Avatar" class="avatar w-10 h-10 sm:w-12 sm:h-12 rounded-full" />
+            <img :src="person.avatar" alt="Avatar" class="avatar w-10 h-10 sm:w-12 sm:h-12 rounded-full avatar-message" />
             <!-- Trạng thái online/offline -->
             <span
               :class="person.isOnline ? 'bg-green-500' : 'bg-gray-400'"
@@ -443,6 +443,10 @@ export default {
 </script>
 
 <style scoped>
+.avatar-message{
+  object-fit: cover;
+}
+
 .cursor-not-allowed {
   cursor: not-allowed;
 }

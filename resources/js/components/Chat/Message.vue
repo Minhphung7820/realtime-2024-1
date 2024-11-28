@@ -6,7 +6,7 @@
     <img
       :src="userInfo.avatar"
       alt="Avatar"
-      class="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3"
+      class="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 avatar-message"
     />
     <!-- Tên và Trạng thái -->
     <div>
@@ -965,6 +965,9 @@ export default {
 </script>
 
 <style scoped>
+.avatar-message{
+  object-fit: cover;
+}
 /* Nút đóng (X) bên ngoài modal */
 .preview-modal-close {
   position: fixed; /* Giữ nút cố định ở một góc */

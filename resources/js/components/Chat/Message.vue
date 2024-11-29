@@ -469,8 +469,16 @@ export default {
   },
   methods: {
     async handlePaste(event) {
+      const MAX_CHARACTERS = 20000; // Giới hạn ký tự tối đa
       const clipboardData = event.clipboardData || window.clipboardData; // Lấy dữ liệu từ clipboard
       const items = clipboardData.items; // Duyệt qua các item trong clipboard
+      const pastedText = clipboardData.getData('text');
+
+      if (this.newMessage.length + pastedText.length > MAX_CHARACTERS) {
+        alert(`Tin nhắn không được vượt quá ${MAX_CHARACTERS} ký tự.`);
+        event.preventDefault(); // Ngăn việc dán nội dung
+        return;
+      }
 
       const files = []; // Danh sách file hợp lệ để gửi đến handleFilePreview
 
@@ -515,6 +523,14 @@ export default {
     },
     async handleFilePreview(files) {
       const MAX_SIZE = 20 * 1024 * 1024; // Kích thước tối đa 20MB
+      const MAX_FILES = 20; // Số lượng file tối đa
+
+      // Kiểm tra tổng số file nếu vượt quá giới hạn
+      if (this.previewFiles.length + files.length > MAX_FILES) {
+        alert(`Bạn chỉ được phép chọn tối đa ${MAX_FILES} file trong một tin nhắn.`);
+        return;
+      }
+
       const newPreviews = Array.from(files).map((file) => {
         if (file.size > MAX_SIZE) {
           alert(`File ${file.name} vượt quá kích thước tối đa là 20MB. Vui lòng chọn file nhỏ hơn.`);
@@ -828,6 +844,12 @@ export default {
       }
     },
     async sendMessage() {
+       const MAX_CHARACTERS = 20000; // Giới hạn ký tự tối đa
+
+      if (this.newMessage.length > MAX_CHARACTERS) {
+        alert(`Tin nhắn không được vượt quá ${MAX_CHARACTERS} ký tự.`);
+        return;
+      }
         if (!this.areAllFilesUploaded()) {
           return;
         }

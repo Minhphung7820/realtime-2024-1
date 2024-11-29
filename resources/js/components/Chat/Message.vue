@@ -160,6 +160,7 @@
         v-model="newMessage"
         @keydown="sendTypingEvent"
         @keydown.enter.prevent="sendMessage"
+        @paste="handlePaste"
         type="text"
         placeholder="Nhập tin nhắn..."
         class="w-full p-2 sm:p-3 border rounded text-sm sm:text-base focus:outline-none pr-10"
@@ -467,6 +468,26 @@ export default {
     },
   },
   methods: {
+    async handlePaste(event) {
+      const clipboardData = event.clipboardData || window.clipboardData; // Lấy dữ liệu từ clipboard
+      const items = clipboardData.items; // Duyệt qua các item trong clipboard
+
+      const files = []; // Danh sách file hợp lệ để gửi đến handleFilePreview
+
+      for (const item of items) {
+        if (item.type.startsWith('image/')) { // Kiểm tra nếu là file hình ảnh
+          const file = item.getAsFile();
+          if (file) {
+            files.push(file); // Thêm file vào danh sách
+          }
+        }
+      }
+
+      // Nếu có file, gọi hàm handleFilePreview
+      if (files.length > 0) {
+        this.handleFilePreview(files); // Gửi danh sách file đến handleFilePreview
+      }
+    },
     openPreview(item) {
       this.previewItem = item;
       this.showPreview = true;

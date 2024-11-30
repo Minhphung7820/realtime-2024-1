@@ -496,16 +496,17 @@ export default {
               this.getMessage()
           ]);
 
-          const messages = this.messages.map(async (msg) => {
-          if (msg.type === "file") {
-              msg.decryptionFiles = await this.loadFileDecryptionMessages(msg.content, msg.encrypted_group_key);
-          }
-              return msg;
-          });
-
-          this.messages = await Promise.all(messages);
           this.socket.emit('join_conversation', this.userInfo.conversation_id);
           this.isLoading = false;
+          //
+          const messages = this.messages.map(async (msg) => {
+              if (msg.type === "file") {
+                  msg.decryptionFiles = await this.loadFileDecryptionMessages(msg.content, msg.encrypted_group_key);
+              }
+              return msg;
+          });
+          //
+          this.messages = await Promise.all(messages);
           // đăng ký lại sự kiện khi chuyển component
           this.$nextTick(() => {
             const messageContent = this.$el.querySelector('.message-content');
@@ -825,9 +826,8 @@ export default {
     async scrollToBottomWithTrigger() {
       await this.$nextTick(); // Chờ Vue render xong DOM
 
+      if (!this.$refs.messageContent) return;
       const messageContent = this.$refs.messageContent;
-      if (!messageContent) return;
-
       // Kiểm tra nếu đã cuộn đến cuối
       const isAtBottom = messageContent.scrollTop === 0;
       if (isAtBottom) {
@@ -926,8 +926,8 @@ export default {
     },
     async scrollToBottom() {
       await this.$nextTick(); // Đảm bảo DOM đã được render trước khi thực hiện
-      const messageContent = this.$refs.messageContent;
-      if (messageContent) {
+      if (this.$refs.messageContent) {
+        const messageContent = this.$refs.messageContent;
         messageContent.scrollTop = 0; // Cuộn xuống cuối
         this.scrollToBottomWithTrigger();
       } else {

@@ -44,7 +44,16 @@
                ]">
           <!-- Kiểm tra nếu msg.content là mảng -->
           <div v-if="msg.type === 'file'">
-              <div v-for="(item, index) in msg.decryptionFiles" :key="index">
+              <div v-if="!msg.decryptionFiles || msg.decryptionFiles.length === 0">
+                  <div v-for="(item, index) in msg.content" :key="index">
+                    <img
+                      src="https://via.placeholder.com/150?text=Loading..."
+                      alt="Loading placeholder"
+                      class="preview-image-message"
+                    />
+                  </div>
+              </div>
+              <div v-else v-for="(item, index) in msg.decryptionFiles" :key="index">
               <!-- Nếu là video -->
               <video v-if="item.type.startsWith('video/')" controls class="preview-video-message" @click="openPreview(item)">
                 <source :src="item.url" :type="item.type" />
@@ -1187,6 +1196,19 @@ export default {
 </script>
 
 <style scoped>
+/* Placeholder cho hình ảnh */
+img.preview-image-message {
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+/* Placeholder loading */
+img.preview-image-message[src*="placeholder"] {
+  filter: grayscale(100%);
+  opacity: 0.5;
+}
+
 .avatar-message{
   object-fit: cover;
 }

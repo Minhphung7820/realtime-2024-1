@@ -44,7 +44,7 @@
                ]">
           <!-- Kiểm tra nếu msg.content là mảng -->
           <div v-if="msg.type === 'file'">
-              <div v-for="(item, index) in msg.formattedFiles" :key="index">
+              <div v-for="(item, index) in msg.decryptionFiles" :key="index">
               <!-- Nếu là video -->
               <video v-if="item.type.startsWith('video/')" controls class="preview-video-message" @click="openPreview(item)">
                 <source :src="item.url" :type="item.type" />
@@ -333,7 +333,7 @@ export default {
          // Giả sử `msg.content` và `msg.encrypted_group_key` là từ API hoặc socket
      const messages = this.messages.map(async (msg) => {
           if (msg.type === "file") {
-              msg.formattedFiles = await this.loadFormattedMessages(msg.content, msg.encrypted_group_key);
+              msg.decryptionFiles = await this.loadFileDecryptionMessages(msg.content, msg.encrypted_group_key);
           }
           return msg;
     });
@@ -370,7 +370,7 @@ export default {
           }
         }
         if(e.type === 'file'){
-          this.messages.unshift({ sender,
+          const objectMessageFile = { sender,
               content: e.content,
               sender_id:e.sender_id ,
               reactions : [],
@@ -378,8 +378,9 @@ export default {
               id: e.message_id,
               type : e.type,
               encrypted_group_key: e.encrypted_group_key
-          });
-          await this.applyFormattingForMessageById(e.message_id);
+          }
+          const objectMessageFileDecrypted = await this.decryptFileWhenReceive(objectMessageFile);
+          this.messages.unshift(objectMessageFileDecrypted);
         }
         // Cuộn xuống cuối và tự động kích hoạt trigger nếu cần
         await this.scrollToBottom();
@@ -491,7 +492,7 @@ export default {
 
           const messages = this.messages.map(async (msg) => {
           if (msg.type === "file") {
-              msg.formattedFiles = await this.loadFormattedMessages(msg.content, msg.encrypted_group_key);
+              msg.decryptionFiles = await this.loadFileDecryptionMessages(msg.content, msg.encrypted_group_key);
           }
               return msg;
           });
@@ -510,34 +511,26 @@ export default {
     },
   },
   methods: {
-    async applyFormattingForMessageById(messageId) {
-  const messageIndex = this.messages.findIndex((msg) => msg.id === messageId);
-
-    if (messageIndex !== -1) {
-      const msg = this.messages[messageIndex];
-      if (msg.type === "file") {
-        try {
-          msg.formattedFiles = await this.loadFormattedMessages(msg.content, msg.encrypted_group_key);
-          // Cập nhật lại mảng messages để Vue nhận diện thay đổi
-          this.messages.splice(messageIndex, 1, msg);
-        } catch (error) {
-          console.error(`Error formatting message with ID ${messageId}:`, error);
+    async decryptFileWhenReceive(object) {
+        if (object.type === "file") {
+          try {
+            object.decryptionFiles = await this.loadFileDecryptionMessages(object.content, object.encrypted_group_key);
+            return object;
+          } catch (error) {
+            console.error(`Error formatting message with ID ${messageId}:`, error);
+          }
         }
-      }
-    } else {
-      console.warn(`Message with ID ${messageId} not found.`);
-    }
-  },
-    async loadFormattedMessages(msgContent, encryptedGroupKey) {
+    },
+    async loadFileDecryptionMessages(msgContent, encryptedGroupKey) {
         try {
-            const formattedMessages = await this.formatFileMessage(msgContent, encryptedGroupKey);
+            const formattedMessages = await this.decryptFileMessage(msgContent, encryptedGroupKey);
             return formattedMessages; // Trả về danh sách các file đã giải mã
         } catch (error) {
             console.error("Error loading formatted messages:", error);
             return [];
         }
     },
-    async formatFileMessage(content, encryptedGroupKey) {
+    async decryptFileMessage(content, encryptedGroupKey) {
         if (!Array.isArray(content)) {
             console.error("Content is not an array:", content);
             return []; // Trả về mảng rỗng nếu không phải mảng

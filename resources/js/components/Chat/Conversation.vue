@@ -128,21 +128,26 @@ export default {
             if (parseInt(e.sender_id) !== parseInt(this.$userProfile.id)) {
               if (this.$parent.dataMessage.id !== parseInt(e.conversation_id)) {
                 // Nếu cuộc trò chuyện không được mở, tăng số lượng tin nhắn chưa đọc
-                const encryptedContent = e.content[this.$userProfile.id]; // Giải mã field content
-                if (encryptedContent) {
-                    const privateKey = await importPrivateKey(
-                          localStorage.getItem("privateKey")
-                    );
-                    const decryptedLastMessage = await decryptMessageWithPrivateKey(
-                          encryptedContent,
-                          privateKey
-                    );
-                    //
-                    matchingConversation.lastMessage = e.type === 'text' ? decryptedLastMessage : 'Đã gửi tệp';
+                let contentDecrypted;
+                    if(e.type === 'text'){
+                        const encryptedContent = e.content[this.$userProfile.id]; // Giải mã field content
+                        if (encryptedContent) {
+                            const privateKey = await importPrivateKey(
+                                  localStorage.getItem("privateKey")
+                            );
+                            contentDecrypted = await decryptMessageWithPrivateKey(
+                                  encryptedContent,
+                                  privateKey
+                            );
+                            //
+                        }
+                    }else{
+                        contentDecrypted = `Đã gửi tệp`;
+                    }
+                    matchingConversation.lastMessage = contentDecrypted;
                     matchingConversation.unread = (matchingConversation.unread || 0) + 1;
                     matchingConversation.sender = 'friend';
                     this.moveConvToTop({id:e.conversation_id});
-                }
               } else {
                 // Nếu cuộc trò chuyện đang được mở, có thể xử lý tin nhắn ngay tại đây
                 console.log("Tin nhắn mới trong cuộc trò chuyện đang mở:", e.content);

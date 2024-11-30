@@ -963,24 +963,31 @@ export default {
         const decryptedMessages = await Promise.all(
             data.map(async (message) => {
                 if(message.type === 'text'){
-                    try {
-                  const encryptedContent = message.content[this.$userProfile.id]; // Giải mã field content
-                  if (encryptedContent) {
-                    const privateKey = await importPrivateKey(
-                      localStorage.getItem("privateKey")
-                    );
-                    const decryptedContent = await decryptMessageWithPrivateKey(
-                      encryptedContent,
-                      privateKey
-                    );
-                    return {
-                      ...message,
-                      content: decryptedContent,
-                    };
+                  try {
+                    const encryptedContent = message.content[this.$userProfile.id]; // Giải mã field content
+                    if (encryptedContent) {
+                      const privateKey = await importPrivateKey(
+                        localStorage.getItem("privateKey")
+                      );
+                      const decryptedContent = await decryptMessageWithPrivateKey(
+                        encryptedContent,
+                        privateKey
+                      );
+                      return {
+                        ...message,
+                        content: decryptedContent,
+                      };
+                    }
+                  } catch (error) {
+                    console.error("Decryption failed for message ID:", message.id, error);
                   }
-                } catch (error) {
-                  console.error("Decryption failed for message ID:", message.id, error);
                 }
+                if(message.type === 'file' && page > 1){
+                  const filesDecrypted = await this.decryptFileMessage(message.content, message.encrypted_group_key)
+                  return {
+                    ...message,
+                    decryptionFiles: filesDecrypted,
+                  };
                 }
               return {
                 ...message,

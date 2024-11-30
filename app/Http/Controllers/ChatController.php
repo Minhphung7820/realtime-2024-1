@@ -40,6 +40,9 @@ class ChatController extends Controller
         if ($origin === 'http://localhost:6060') {
             $data = $people->pluck('users.last_active', 'users.id');
         } else {
+            if (isset($request['getAll']) && $request['getAll'] == 'true') {
+                return $people->get();
+            }
             $data = $people->paginate($request['limit'] ?? 10);
         }
 

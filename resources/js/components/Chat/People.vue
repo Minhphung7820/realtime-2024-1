@@ -4,6 +4,14 @@
 
     <!-- Tabs -->
     <div class="tabs flex border-b mb-4">
+         <!-- Tab Đang hoạt động -->
+      <button
+        class="tab px-4 py-2"
+        :class="{ 'border-b-2 border-blue-500 font-bold': activeTab === 'online' }"
+        @click="activeTab = 'online'"
+      >
+        <GlobeAltIcon class="w-6 h-6 text-blue-500" />
+      </button>
       <button
         class="tab px-4 py-2"
         :class="{ 'border-b-2 border-blue-500 font-bold': activeTab === 'friends' }"
@@ -33,6 +41,35 @@
       </button>
     </div>
 
+
+    <!-- Nội dung tab -->
+    <div v-if="activeTab === 'online'">
+      <!-- Danh sách Đang hoạt động -->
+      <div v-if="isLoading" class="loading-container">
+        <div class="spinner"></div>
+      </div>
+      <ul v-else>
+        <li
+          v-for="(person, index) in onlineUsers"
+          :key="index"
+          class="people-item flex items-center p-2 sm:p-3 border-b cursor-pointer hover:bg-gray-200"
+          @click="openChat(person.id, 'private')"
+        >
+          <!-- Avatar and status dot container -->
+          <div class="relative mr-3">
+            <!-- Avatar -->
+            <img :src="person.avatar" alt="Avatar" class="avatar w-10 h-10 sm:w-12 sm:h-12 rounded-full avatar-message" />
+            <!-- Trạng thái online -->
+            <span class="bg-green-500 w-3 h-3 rounded-full absolute bottom-0 right-0 border-2 border-white"></span>
+          </div>
+
+          <!-- Nội dung -->
+          <div class="flex-1">
+            <h4 class="font-semibold text-sm sm:text-base truncate">{{ person.name }}</h4>
+          </div>
+        </li>
+      </ul>
+    </div>
     <!-- Nội dung các tab -->
     <div v-if="activeTab === 'friends'">
       <!-- Danh sách bạn bè (cũ) -->
@@ -51,18 +88,18 @@
             <!-- Avatar -->
             <img :src="person.avatar" alt="Avatar" class="avatar w-10 h-10 sm:w-12 sm:h-12 rounded-full avatar-message" />
             <!-- Trạng thái online/offline -->
-            <span
+            <!-- <span
               :class="person.isOnline ? 'bg-green-500' : 'bg-gray-400'"
               class="w-3 h-3 rounded-full absolute bottom-0 right-0 border-2 border-white"
-            ></span>
+            ></span> -->
           </div>
 
           <!-- Nội dung -->
           <div class="flex-1">
             <h4 class="font-semibold text-sm sm:text-base truncate">{{ person.name }}</h4>
-            <p class="text-xs text-gray-400 mt-1 truncate">
+            <!-- <p class="text-xs text-gray-400 mt-1 truncate">
               {{ !person.isOnline ? person.last_active_string : '' }}
-            </p>
+            </p> -->
           </div>
         </li>
       </ul>
@@ -219,19 +256,20 @@
 <script>
 import { onlineStore } from "../../stores/UserOnline.js";
 import {formatTimeDifference,encodeQueryParams} from '../../utils/functions.js';
-import { UserPlusIcon,UsersIcon,UserGroupIcon } from '@heroicons/vue/24/solid';
+import { UserPlusIcon,UsersIcon,UserGroupIcon,GlobeAltIcon } from '@heroicons/vue/24/solid';
 
 export default {
   components: {
-    UserPlusIcon,UsersIcon,UserGroupIcon
+    UserPlusIcon,UsersIcon,UserGroupIcon,GlobeAltIcon
   },
   inject: ['$axios', '$socket','$userProfile'],
   data() {
     return {
+      onlineUsers : [],
       people: [],
-      updateLastActiveInterval : null,
+      // updateLastActiveInterval : null,
       isLoading: true,
-      activeTab: 'friends',
+      activeTab: 'online',
       friendRequests:[], // Danh sách yêu cầu kết bạn (mẫu)
       searchQuery: '', // Dữ liệu input tìm kiếm
       searchResults:[], // Kết quả tìm kiếm (mẫu)
@@ -252,6 +290,8 @@ export default {
     },
     tabTitle() {
       switch (this.activeTab) {
+        case 'online':
+          return 'Đang hoạt động';
         case 'friends':
           return 'Bạn bè';
         case 'requests':
@@ -264,8 +304,12 @@ export default {
     }
   },
   async mounted() {
-    await this.fetchPeopleWithStatus();
-    await this.getRequestFriend();
+    await Promise.all([
+        this.fetchPeopleWithStatus(),
+        this.getRequestFriend(),
+        this.onlines()
+    ]);
+
     // Lắng nghe sự kiện từ WebSocket
     this.$socket.on('user_list',this.handleUserWithStatus);
     this.$socket.on('user_disconnect_list', this.handleUserWithStatus);
@@ -282,16 +326,30 @@ export default {
       }
   });
     // Chạy hàm cập nhật last_active mỗi giây
-    this.updateLastActiveInterval = setInterval(() => {
-        this.updateLastActive();
-    }, 1000);
+    // this.updateLastActiveInterval = setInterval(() => {
+    //     this.updateLastActive();
+    // }, 1000);
     this.isLoading = false;
   },
   beforeUnmount() {
     // Dừng interval khi component bị hủy
-    clearInterval(this.updateLastActiveInterval);
+    // clearInterval(this.updateLastActiveInterval);
   },
   methods: {
+    async onlines()
+    {
+      try {
+        const users = await this.$axios.get(`/api/get-people?getAll=true`);
+        this.onlineUsers = this.onlineStoreData.data
+          .filter((onlineUser) => onlineUser.isOnline)
+          .map((onlineUser) => {
+            return users.data.find((user) => parseInt(user.id) === parseInt(onlineUser.userID));
+          })
+          .filter((user) => user);
+      } catch (error) {
+        console.error("GET DATA FAILED :",error);
+      }
+    },
     loadMoreFriend(){
      if(!this.isLoadingMoreFriend){
           this.isLoadingMoreFriend = true;
@@ -424,6 +482,16 @@ export default {
     },
     handleUserWithStatus(user) {
       const matchingPerson = this.people.find(person => parseInt(person.id) === parseInt(user.userID));
+      if(!user.online){
+         this.onlineUsers = this.onlineUsers.filter(person => parseInt(person.id) !== parseInt(user.userID));
+      }else{
+         this.onlineUsers.unshift({
+            id:user.userID,
+            name: user.name,
+            avatar: user.avatar,
+            last_active: user.last_active
+         });
+      }
       if (matchingPerson) {
         matchingPerson.isOnline = user.online;
         matchingPerson.last_active = user.last_active;
@@ -431,13 +499,13 @@ export default {
       }
     },
     // Hàm cập nhật last_active cho từng người online
-    updateLastActive() {
-      this.people.slice(0, 10).forEach(person => {
-        if (!person.isOnline && person.last_active) {
-          person.last_active_string = formatTimeDifference(person.last_active);
-        }
-      });
-    }
+    // updateLastActive() {
+    //   this.people.slice(0, 10).forEach(person => {
+    //     if (!person.isOnline && person.last_active) {
+    //       person.last_active_string = formatTimeDifference(person.last_active);
+    //     }
+    //   });
+    // }
   }
 };
 </script>

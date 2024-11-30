@@ -175,7 +175,7 @@ export default {
             matchingConversation.unread = (matchingConversation.unread || 0) + 1;
             matchingConversation.sender = 'friend';
             this.moveConvToTop({ id: e.conversation_id });
-        }, 300);
+        }, 100);
     },
     resetUnread(data)
     {

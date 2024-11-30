@@ -127,8 +127,8 @@ export default {
          if(matchingConversation){
             if (parseInt(e.sender_id) !== parseInt(this.$userProfile.id)) {
               if (this.$parent.dataMessage.id !== parseInt(e.conversation_id)) {
-                // Nếu cuộc trò chuyện không được mở, tăng số lượng tin nhắn chưa đọc
-                let contentDecrypted;
+                    // Nếu cuộc trò chuyện không được mở, tăng số lượng tin nhắn chưa đọc
+                    let contentDecrypted;
                     if(e.type === 'text'){
                         const encryptedContent = e.content[this.$userProfile.id]; // Giải mã field content
                         if (encryptedContent) {
@@ -141,8 +141,9 @@ export default {
                             );
                             //
                         }
-                    }else{
-                        contentDecrypted = `Đã gửi tệp`;
+                    }
+                    if(e.type === 'file'){
+                        contentDecrypted = `Đã gửi ${e.content.length} tệp`;
                     }
                     matchingConversation.lastMessage = contentDecrypted;
                     matchingConversation.unread = (matchingConversation.unread || 0) + 1;
@@ -191,7 +192,7 @@ export default {
             if(objectConv.type === 'text'){
               contentFormat = objectConv.content;
             }else{
-              contentFormat = `Đã gửi tệp`;
+              contentFormat = `Đã gửi ${objectConv.content.length} tệp`;
             }
             this.conversations[conversationIndex].lastMessage = contentFormat;
           }
@@ -242,7 +243,7 @@ export default {
                       lastMessageDecrypt = decryptedLastMessage;
                      }
                   }else{
-                     lastMessageDecrypt = `Đã gửi tệp`;
+                     lastMessageDecrypt = `Đã gửi ${JSON.parse(conversation.lastMessage).length} tệp`;
                   }
                 } else {
                   lastMessageDecrypt = null; // Không có tin nhắn cuối

@@ -416,12 +416,6 @@ export async function decryptMessageWithPrivateKey(encryptedData, privateKey) {
     return new TextDecoder().decode(decryptedMessage);
 }
 
-export function generateGroupKey() {
-    // Tạo Group Key ngẫu nhiên (32 bytes = 256 bits)
-    const groupKey = crypto.getRandomValues(new Uint8Array(32));
-    return btoa(String.fromCharCode(...groupKey)); // Encode Base64 để lưu trữ
-}
-
 export async function encryptMessageWithGroupKey(message, groupKey) {
     // Decode Group Key từ Base64
     const rawGroupKey = new Uint8Array(atob(groupKey).split("").map(c => c.charCodeAt(0)));
@@ -463,32 +457,122 @@ export async function decryptMessageWithGroupKey(encryptedData, groupKey) {
     return new TextDecoder().decode(decryptedMessage);
 }
 
-export async function encryptGroupKeyWithPublicKey(groupKey, publicKey) {
-    // Decode Group Key từ Base64
-    const rawGroupKey = new Uint8Array(atob(groupKey).split("").map(c => c.charCodeAt(0)));
+export async function generateGroupKey() {
+    const key = await crypto.subtle.generateKey({
+        name: "AES-GCM",
+        length: 256,
+    },
+        true, ["encrypt", "decrypt"]
+    );
+    return key;
+}
 
-    // Mã hóa Group Key bằng RSA-OAEP
+export async function encryptFileWithGroupKey(groupKey, fileData) {
+    const iv = crypto.getRandomValues(new Uint8Array(12)); // Random IV
+    const encryptedData = await crypto.subtle.encrypt({
+        name: "AES-GCM",
+        iv,
+    },
+        groupKey,
+        fileData // fileData giờ đây là ArrayBuffer
+    );
+    const encryptedUint8Array = new Uint8Array(encryptedData);
+    const combinedData = new Blob([iv, encryptedUint8Array], { type: "application/octet-stream" });
+
+    return combinedData; // Trả về Blob chứa IV và dữ liệu mã hóa
+}
+
+export async function decryptFileWithGroupKey(encryptedBlob, groupKey) {
+    try {
+        const arrayBuffer = await encryptedBlob.arrayBuffer();
+
+        const iv = new Uint8Array(arrayBuffer.slice(0, 12)); // Tách IV
+        const encryptedData = arrayBuffer.slice(12); // Tách dữ liệu mã hóa
+
+        const decryptedData = await crypto.subtle.decrypt({
+            name: "AES-GCM",
+            iv, // IV phải là Uint8Array
+        }, groupKey, encryptedData);
+
+        return decryptedData; // Trả về ArrayBuffer
+    } catch (error) {
+        throw error; // Báo lỗi nếu có vấn đề
+    }
+}
+
+export async function encryptGroupKeyWithPublicKey(groupKey, publicKey) {
+    const exportedKey = await crypto.subtle.exportKey("raw", groupKey);
     const encryptedGroupKey = await crypto.subtle.encrypt({
         name: "RSA-OAEP",
     },
         publicKey,
-        rawGroupKey
+        exportedKey
     );
-
-    return btoa(String.fromCharCode(...new Uint8Array(encryptedGroupKey))); // Base64
+    return encryptedGroupKey;
 }
 
 export async function decryptGroupKeyWithPrivateKey(encryptedGroupKey, privateKey) {
-    // Decode Group Key từ Base64
-    const rawEncryptedGroupKey = new Uint8Array(atob(encryptedGroupKey).split("").map(c => c.charCodeAt(0)));
-
-    // Giải mã Group Key bằng RSA-OAEP
-    const decryptedGroupKey = await crypto.subtle.decrypt({
+    const decryptedGroupKeyRaw = await crypto.subtle.decrypt({
         name: "RSA-OAEP",
     },
         privateKey,
-        rawEncryptedGroupKey
+        encryptedGroupKey
     );
+    const groupKey = await crypto.subtle.importKey(
+        "raw",
+        decryptedGroupKeyRaw, {
+        name: "AES-GCM",
+    },
+        true, ["encrypt", "decrypt"]
+    );
+    return groupKey;
+}
 
-    return btoa(String.fromCharCode(...new Uint8Array(decryptedGroupKey))); // Base64
+export async function arrayBufferToBase64(buffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary); // Encode to Base64
+}
+
+export async function base64ToArrayBuffer(base64) {
+    const binaryString = atob(base64); // Decode Base64
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer; // Trả về ArrayBuffer
+}
+
+export async function testEncryptionDecryption() {
+    try {
+        // Tạo groupKey
+        const groupKey = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 },
+            true, ["encrypt", "decrypt"]
+        );
+
+        // Dữ liệu đầu vào (ArrayBuffer)
+        const originalData = new TextEncoder().encode("This is a test file").buffer;
+
+        // Mã hóa
+        const encryptedBlob = await encryptFileWithGroupKey(groupKey, originalData);
+        console.log("Encrypted Blob:", encryptedBlob);
+
+        // Giải mã
+        const decryptedData = await decryptFileWithGroupKey(encryptedBlob, groupKey);
+        console.log("Decrypted Data:", new TextDecoder().decode(decryptedData));
+
+        // So sánh dữ liệu gốc và dữ liệu giải mã
+        if (new TextDecoder().decode(decryptedData) === "This is a test file") {
+            console.log("Encryption and decryption work correctly!");
+        } else {
+            console.error("Decryption result does not match the original data!");
+        }
+    } catch (error) {
+        console.error("Error in encryption/decryption:", error);
+    }
 }

@@ -14,10 +14,11 @@ class Message extends Model
         'sender_id',
         'content',
         'type',
-        'seen'
+        'seen',
+        'encrypted_group_key'
     ];
 
-    protected $casts = ['content' => 'json'];
+    protected $casts = ['content' => 'json', 'encrypted_group_key' => 'json'];
 
     public function conversation()
     {

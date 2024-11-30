@@ -44,7 +44,7 @@
                ]">
           <!-- Kiểm tra nếu msg.content là mảng -->
           <div v-if="msg.type === 'file'">
-            <div v-for="(item, index) in JSON.parse(msg.content)" :key="index">
+              <div v-for="(item, index) in msg.formattedFiles" :key="index">
               <!-- Nếu là video -->
               <video v-if="item.type.startsWith('video/')" controls class="preview-video-message" @click="openPreview(item)">
                 <source :src="item.url" :type="item.type" />
@@ -263,7 +263,14 @@ import {
     importPublicKey,
     importPrivateKey,
     encryptMessageWithPublicKey,
-    decryptMessageWithPrivateKey
+    decryptMessageWithPrivateKey,
+    generateGroupKey,
+    encryptFileWithGroupKey,
+    decryptFileWithGroupKey,
+    encryptGroupKeyWithPublicKey,
+    decryptGroupKeyWithPrivateKey,
+    arrayBufferToBase64,
+    base64ToArrayBuffer
 } from "../../utils/functions.js"
 import 'vue3-emoji-picker/css'
 
@@ -287,6 +294,7 @@ export default {
   },
   data() {
     return {
+      groupKey: null,
       previewItem: null,
       showPreview: false,
       previewFiles: [], // Danh sách file preview,
@@ -322,35 +330,59 @@ export default {
      await this.findConversation();
      await this.getStatusUserOnline();
      await this.getMessage();
+         // Giả sử `msg.content` và `msg.encrypted_group_key` là từ API hoặc socket
+     const messages = this.messages.map(async (msg) => {
+          if (msg.type === "file") {
+              msg.formattedFiles = await this.loadFormattedMessages(msg.content, msg.encrypted_group_key);
+          }
+          return msg;
+    });
+
+     this.messages = await Promise.all(messages);
      this.socket.on('user_list',this.handleUserWithStatusFromSocket);
      this.socket.on('user_disconnect_list', this.handleUserWithStatusFromSocket);
      this.socket.emit('join_conversation', this.userInfo.conversation_id);
 
     this.socket.on('receive_message', async (e) => {
       if (parseInt(e.conversation_id) === parseInt(this.userInfo.conversation_id)) {
-        const sender = parseInt(e.sender_id) === parseInt(this.$userProfile.id) ? 'me' : 'friend';
+          const sender = parseInt(e.sender_id) === parseInt(this.$userProfile.id) ? 'me' : 'friend';
 
-        const encryptedContent = e.content[this.$userProfile.id]; // Giải mã field content
-        if (encryptedContent) {
-            const privateKey = await importPrivateKey(
-                  localStorage.getItem("privateKey")
-            );
-            const decryptedContent = await decryptMessageWithPrivateKey(
-                  encryptedContent,
-                  privateKey
-            );
-            //
-            this.messages.unshift({ sender,
-                  content: decryptedContent,
-                  sender_id:e.sender_id ,
-                  reactions : [],
-                  total_reactions : 0,
-                  id: e.message_id,
-                  type : e.type
-            });
-            // Cuộn xuống cuối và tự động kích hoạt trigger nếu cần
-            await this.scrollToBottom();
+        if(e.type === 'text'){
+          const encryptedContent = e.content[this.$userProfile.id]; // Giải mã field content
+
+          if (encryptedContent) {
+              const privateKey = await importPrivateKey(
+                    localStorage.getItem("privateKey")
+              );
+              const decryptedContent = await decryptMessageWithPrivateKey(
+                    encryptedContent,
+                    privateKey
+              );
+
+              this.messages.unshift({ sender,
+                    content: decryptedContent,
+                    sender_id:e.sender_id ,
+                    reactions : [],
+                    total_reactions : 0,
+                    id: e.message_id,
+                    type : e.type
+              });
+          }
         }
+        if(e.type === 'file'){
+          this.messages.unshift({ sender,
+              content: e.content,
+              sender_id:e.sender_id ,
+              reactions : [],
+              total_reactions : 0,
+              id: e.message_id,
+              type : e.type,
+              encrypted_group_key: e.encrypted_group_key
+          });
+          await this.applyFormattingForMessageById(e.message_id);
+        }
+        // Cuộn xuống cuối và tự động kích hoạt trigger nếu cần
+        await this.scrollToBottom();
       }
     });
 
@@ -430,6 +462,7 @@ export default {
             // this.socket.emit('leave_conversation', this.userInfo.conversation_id);
             this.socket = null;
           }
+          this.groupKey= null;
           this.previewItem = null;
           this.showPreview = false;
           this.previewFiles = [];
@@ -455,6 +488,15 @@ export default {
           await this.findConversation();
           await this.getStatusUserOnline();
           await this.getMessage();
+
+          const messages = this.messages.map(async (msg) => {
+          if (msg.type === "file") {
+              msg.formattedFiles = await this.loadFormattedMessages(msg.content, msg.encrypted_group_key);
+          }
+              return msg;
+          });
+
+          this.messages = await Promise.all(messages);
           this.socket.emit('join_conversation', this.userInfo.conversation_id);
           this.isLoading = false;
           // đăng ký lại sự kiện khi chuyển component
@@ -468,6 +510,109 @@ export default {
     },
   },
   methods: {
+    async applyFormattingForMessageById(messageId) {
+  const messageIndex = this.messages.findIndex((msg) => msg.id === messageId);
+
+    if (messageIndex !== -1) {
+      const msg = this.messages[messageIndex];
+      if (msg.type === "file") {
+        try {
+          msg.formattedFiles = await this.loadFormattedMessages(msg.content, msg.encrypted_group_key);
+          // Cập nhật lại mảng messages để Vue nhận diện thay đổi
+          this.messages.splice(messageIndex, 1, msg);
+        } catch (error) {
+          console.error(`Error formatting message with ID ${messageId}:`, error);
+        }
+      }
+    } else {
+      console.warn(`Message with ID ${messageId} not found.`);
+    }
+  },
+    async loadFormattedMessages(msgContent, encryptedGroupKey) {
+        try {
+            const formattedMessages = await this.formatFileMessage(msgContent, encryptedGroupKey);
+            return formattedMessages; // Trả về danh sách các file đã giải mã
+        } catch (error) {
+            console.error("Error loading formatted messages:", error);
+            return [];
+        }
+    },
+    async formatFileMessage(content, encryptedGroupKey) {
+        if (!Array.isArray(content)) {
+            console.error("Content is not an array:", content);
+            return []; // Trả về mảng rỗng nếu không phải mảng
+        }
+
+        let groupKey;
+
+        const encryptedMe = encryptedGroupKey[this.$userProfile.id];
+        if (encryptedMe) {
+            try {
+                const groupKeyDecrypt = await decryptGroupKeyWithPrivateKey(
+                    await base64ToArrayBuffer(encryptedMe),
+                    await importPrivateKey(localStorage.getItem('privateKey'))
+                );
+
+                if (groupKeyDecrypt) {
+                    groupKey = groupKeyDecrypt;
+                } else {
+                    throw new Error('Failed to decrypt group key.');
+                }
+            } catch (error) {
+                console.error('Error decrypting group key:', error);
+                return []; // Trả về mảng rỗng nếu không thể giải mã Group Key
+            }
+        } else {
+            console.error('Encrypted group key not found for user.');
+            return []; // Trả về mảng rỗng nếu không tìm thấy khóa
+        }
+
+        const results = await Promise.all(
+            content.map(async (value) => {
+                try {
+                    let encryptedBlob;
+
+                    if (typeof value.url === 'string') {
+
+                        const response = await fetch(value.url);
+                        if (!response.ok) {
+                            throw new Error(`Failed to fetch file: ${response.statusText}`);
+                        }
+                        encryptedBlob = await response.blob();
+                        if (!encryptedBlob.type) {
+                          encryptedBlob = new Blob([encryptedBlob], { type: 'application/octet-stream' });
+                        }
+
+                    } else if (value.url instanceof Blob) {
+                        encryptedBlob = value.url;
+                    } else {
+                        throw new Error('Invalid data type for value.url');
+                    }
+                    // Giải mã file
+                    const decryptedFile = await decryptFileWithGroupKey(encryptedBlob, groupKey);
+
+                    return {
+                        ...value,
+                        url: URL.createObjectURL(
+                             new Blob([decryptedFile], { type: value.type || 'application/octet-stream' })
+                        ), // Tạo URL cho file đã giải mã
+                    };
+                } catch (error) {
+                    console.error('Error processing filed:', error);
+                    return null;
+                }
+            })
+        );
+
+        return results.filter((file) => file !== null);
+    },
+    async generateOrUseGroupKey() {
+      if (!this.groupKey) {
+        // Tạo group key mới nếu chưa có hoặc đã sử dụng
+        this.groupKey = await generateGroupKey();
+      }
+      return this.groupKey;
+    },
     async handlePaste(event) {
       const MAX_CHARACTERS = 20000; // Giới hạn ký tự tối đa
       const clipboardData = event.clipboardData || window.clipboardData; // Lấy dữ liệu từ clipboard
@@ -508,6 +653,14 @@ export default {
     areAllFilesUploaded() {
       return this.previewFiles.every((file) => !file.isUploading);
     },
+    async readFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result); // Trả về ArrayBuffer
+            reader.onerror = reject;
+            reader.readAsArrayBuffer(file); // Đọc file dưới dạng ArrayBuffer
+        });
+    },
     sendImage() {
       // Mở trình chọn file
       const fileInput = document.createElement('input');
@@ -530,30 +683,37 @@ export default {
         alert(`Bạn chỉ được phép chọn tối đa ${MAX_FILES} file trong một tin nhắn.`);
         return;
       }
+      const groupKey = await this.generateOrUseGroupKey();
+      const newPreviews = await Promise.all(
+        Array.from(files).map(async (file) => {
 
-      const newPreviews = Array.from(files).map((file) => {
-        if (file.size > MAX_SIZE) {
-          alert(`File ${file.name} vượt quá kích thước tối đa là 20MB. Vui lòng chọn file nhỏ hơn.`);
-          return null; // Bỏ qua file vượt kích thước
-        }
+          if (file.size > MAX_SIZE) {
+            alert(`File ${file.name} vượt quá kích thước tối đa là 20MB. Vui lòng chọn file nhỏ hơn.`);
+            return null; // Bỏ qua file vượt kích thước
+          }
 
-        const reader = new FileReader();
-        const preview = {
-          name: file.name,
-          type: file.type,
-          url: 'https://static.thenounproject.com/png/4595376-200.png', // Chờ FileReader xử lý
-          file, // File gốc
-          isUploading: true, // Đang tải
-        };
+          const fileData = await this.readFile(file);
+          const encryptedFile = await encryptFileWithGroupKey(groupKey, fileData);
+          const reader = new FileReader();
 
-        reader.onload = (e) => {
-          preview.url = e.target.result; // Gắn URL tạm thời
-        };
-        reader.readAsDataURL(file);
+          const preview = {
+            name: file.name,
+            type: file.type,
+            encryptedFile,
+            url: null, // Chờ FileReader xử lý
+            file, // File gốc
+            isUploading: true, // Đang tải
+          };
 
-        return preview;
-      });
+          reader.onload = (e) => {
+            preview.url = e.target.result; // Gắn URL tạm thời
+            this.$forceUpdate(); // Cập nhật giao diện để hiển thị preview
+          };
+          reader.readAsDataURL(file);
 
+          return preview;
+        })
+      );
       // Loại bỏ file null (do vượt kích thước)
       this.previewFiles.push(...newPreviews.filter((file) => file !== null));
 
@@ -572,7 +732,7 @@ export default {
                 : 'others';
 
               const formData = new FormData();
-              formData.append('file', file.file);
+              formData.append('file', file.encryptedFile);
               formData.append('folder', folder);
 
               // Gọi API upload file
@@ -580,7 +740,7 @@ export default {
               const data = response.data;
 
               // Cập nhật URL từ API
-              file.url = data.url;
+              file.saved_url = data.url;
             } catch (error) {
               console.error('Error uploading file:', error);
             } finally {
@@ -794,7 +954,8 @@ export default {
         if (type === "private") {
         const decryptedMessages = await Promise.all(
             data.map(async (message) => {
-                try {
+                if(message.type === 'text'){
+                    try {
                   const encryptedContent = message.content[this.$userProfile.id]; // Giải mã field content
                   if (encryptedContent) {
                     const privateKey = await importPrivateKey(
@@ -812,9 +973,10 @@ export default {
                 } catch (error) {
                   console.error("Decryption failed for message ID:", message.id, error);
                 }
+                }
               return {
                 ...message,
-                content: "Không thể giải mã", // Hiển thị thông báo nếu giải mã thất bại
+                content: message.type === 'text' ? "Không thể giải mã" : message.content, // Hiển thị thông báo nếu giải mã thất bại
               };
             })
           );
@@ -845,15 +1007,22 @@ export default {
     },
     async sendMessage() {
        const MAX_CHARACTERS = 20000; // Giới hạn ký tự tối đa
+       const userEncryptedGroupKey = {};
 
-      if (this.newMessage.length > MAX_CHARACTERS) {
+       if (this.newMessage.length > MAX_CHARACTERS) {
         alert(`Tin nhắn không được vượt quá ${MAX_CHARACTERS} ký tự.`);
         return;
-      }
-        if (!this.areAllFilesUploaded()) {
+       }
+
+       if (!this.groupKey) {
+        this.groupKey = await this.generateOrUseGroupKey(); // Tạo groupKey nếu cần
+       }
+
+       if (!this.areAllFilesUploaded()) {
           return;
-        }
-        if (this.newMessage.trim() !== '' || this.previewFiles.length > 0) {
+       }
+
+       if (this.newMessage.trim() !== '' || this.previewFiles.length > 0) {
             try {
                 let messageSend;
                 let fileSend;
@@ -889,24 +1058,26 @@ export default {
                               publicKey: this.userInfo.publicKey
                             }
                            ];
-                           const json = {};
 
-                           const promises = users.map(async (user) => {
-                            const files = this.previewFiles.map((value) => ({
-                              url: value.url,
-                              type: value.type,
-                            }));
-                            const fileJson = JSON.stringify(files);
-                            const filesCrypted = await encryptMessageWithPublicKey(
-                              fileJson,
-                              await importPublicKey(user.publicKey)
+                            const arrayData = await Promise.all(
+                              this.previewFiles.map(async (value) => ({
+                                url: value.saved_url,
+                                type: value.type,
+                              }))
                             );
-                            json[user.id] = filesCrypted;
-                           });
 
-                           await Promise.all(promises);
-                           fileSend = json;
+                            await Promise.all(
+                              users.map(async (user) => {
+                                const groupKeyUserEncrypted = await encryptGroupKeyWithPublicKey(
+                                  this.groupKey,
+                                  await importPublicKey(user.publicKey)
+                                );
 
+                                userEncryptedGroupKey[user.id] = await arrayBufferToBase64(groupKeyUserEncrypted);
+                              })
+                            );
+
+                            fileSend = arrayData; // `arrayData` đã chứa dữ liệu resolved
                         }
                     } catch (encryptionError) {
                         console.error("Error during encryption:", encryptionError);
@@ -930,7 +1101,8 @@ export default {
                       sender_id: this.$userProfile.id,
                       content: messageSend,
                       message_id: response.data.id,
-                      type: 'text'
+                      type: 'text',
+                      encrypted_group_key : userEncryptedGroupKey
                   });
                 }else if(this.newMessage.trim() === '' && fileSend){
                   typeMessage = 'file';
@@ -938,7 +1110,8 @@ export default {
                       conversation_id: this.userInfo.conversation_id,
                       content: fileSend,
                       type: 'file',
-                      type_conversation : this.dataMessage.type
+                      type_conversation : this.dataMessage.type,
+                      encrypted_group_key : userEncryptedGroupKey
                   });
 
                   this.socket.emit(`send_message`, {
@@ -946,7 +1119,8 @@ export default {
                       sender_id: this.$userProfile.id,
                       content: fileSend,
                       message_id: response.data.id,
-                      type: 'file'
+                      type: 'file',
+                      encrypted_group_key : userEncryptedGroupKey
                   });
                 }else if(this.newMessage.trim() !== '' && fileSend){
                   typeMessage = 'file';
@@ -961,7 +1135,8 @@ export default {
                       conversation_id: this.userInfo.conversation_id,
                       content: fileSend,
                       type: 'file',
-                      type_conversation : this.dataMessage.type
+                      type_conversation : this.dataMessage.type,
+                      encrypted_group_key : userEncryptedGroupKey
                      }
                   });
 
@@ -970,7 +1145,8 @@ export default {
                       sender_id: this.$userProfile.id,
                       content: messageSend,
                       message_id: response.data.text_message_id,
-                      type: 'text'
+                      type: 'text',
+                      encrypted_group_key : userEncryptedGroupKey
                   });
 
                   this.socket.emit(`send_message`, {
@@ -978,7 +1154,8 @@ export default {
                       sender_id: this.$userProfile.id,
                       content: fileSend,
                       message_id: response.data.file_message_id,
-                      type: 'file'
+                      type: 'file',
+                      encrypted_group_key : userEncryptedGroupKey
                   });
                 }
                 this.viewers = [];
@@ -990,10 +1167,11 @@ export default {
 
                 this.newMessage = '';
                 this.previewFiles = [];
+                this.groupKey = null;
             } catch (error) {
                 console.error("Error in sendMessage function:", error);
             }
-        }
+       }
     },
     sendTypingEvent() {
         this.socket.emit(`typing`,{

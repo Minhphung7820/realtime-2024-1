@@ -7,46 +7,40 @@ use Illuminate\Http\Request;
 class FileUploadController extends Controller
 {
     /**
-     * Upload ảnh hoặc file vào folder chỉ định.
+     * Upload file trực tiếp vào thư mục public/uploads/$folder.
      */
     public function uploadFile(Request $request)
     {
-        // Xác thực dữ liệu từ request
         $request->validate([
-            'file' => 'required|file|max:20000000', // File tối đa 20MB
-            'folder' => 'required|string' // Tên folder là bắt buộc
+            'file' => 'required|file', // File được upload
+            'folder' => 'required|string' // Tên folder trong public/uploads
         ]);
 
-        // Lấy folder từ request
-        $folder = trim($request->input('folder'));
-
-        // Đảm bảo tên folder hợp lệ
-        if (preg_match('/[^a-zA-Z0-9_\-\/]/', $folder)) {
-            return response()->json([
-                'message' => 'Invalid folder name. Only alphanumeric characters, underscores, dashes, and slashes are allowed.'
-            ], 400);
-        }
-
-        // Đường dẫn đầy đủ của folder
-        $folderPath = public_path('uploads/' . $folder);
-
-        // Tạo folder nếu chưa tồn tại
-        if (!file_exists($folderPath)) {
-            mkdir($folderPath, 0777, true); // Tạo folder và các folder con nếu cần
-        }
-
-        // Lưu file với tên mới (thời gian + tên gốc)
+        // Lấy thông tin folder và file
+        $folder = $request->input('folder');
         $file = $request->file('file');
-        $newFileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-        $file->move($folderPath, $newFileName);
 
-        // Tạo URL cho file đã lưu
-        $url = asset('uploads/' . $folder . '/' . $newFileName);
+        // Tạo đường dẫn folder đầy đủ
+        $destinationPath = public_path("uploads/$folder");
 
-        // Trả về đường dẫn file cho frontend
+        // Đảm bảo thư mục tồn tại
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0777, true); // Tạo thư mục nếu chưa tồn tại
+        }
+
+        // Tạo tên file duy nhất
+        $fileName = time() . '_' . md5(rand(0, 99999)) . '_' . uniqid() . '_encrypted_' . $file->getClientOriginalName();
+
+        // Di chuyển file vào thư mục public/uploads/$folder
+        $file->move($destinationPath, $fileName);
+
+        // Tạo URL công khai của file
+        $url = asset("uploads/$folder/$fileName");
+
+        // Trả về JSON response
         return response()->json([
             'message' => 'File uploaded successfully',
-            'url' => $url
+            'url' => $url,
         ]);
     }
 }

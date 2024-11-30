@@ -176,6 +176,7 @@ class ChatController extends Controller
                         'sender_id' => auth()->guard('api')->id(),
                         'content' => $content,
                         'type' => $request['type'],
+                        'encrypted_group_key' => $request['encrypted_group_key'] ?? null,
                         'created_at' => now()->format('Y-m-d H:i:s')
                     ]
                 );
@@ -201,6 +202,7 @@ class ChatController extends Controller
                     'sender_id' => $user_id,
                     'content' => $messageText['content'],
                     'type' => $messageText['type'],
+                    'encrypted_group_key' => $request['encrypted_group_key'] ?? null,
                     'created_at' => now()->format('Y-m-d H:i:s'),
                 ]);
 
@@ -210,6 +212,7 @@ class ChatController extends Controller
                     'sender_id' => $user_id,
                     'content' => $messageFile['content'],
                     'type' => $messageFile['type'],
+                    'encrypted_group_key' => $request['encrypted_group_key'] ?? null,
                     'created_at' => now()->format('Y-m-d H:i:s'),
                 ]);
 

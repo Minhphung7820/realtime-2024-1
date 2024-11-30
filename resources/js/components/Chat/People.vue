@@ -325,7 +325,10 @@ export default {
     this.$socket.on(`receive_noti_change_friend_request`,async (e) => {
       if (e.status === 'accepted') {
         await onlineStore().fetchData(true);
-        await this.fetchPeopleWithStatus();
+        await Promise.all([
+          this.fetchPeopleWithStatus(),
+          this.onlines()
+        ]);
       }
   });
     // Chạy hàm cập nhật last_active mỗi giây
@@ -420,7 +423,10 @@ export default {
 
           this.countRequestFriend = this.friendRequests.length;
           await onlineStore().fetchData(true);
-          await this.fetchPeopleWithStatus();
+          await Promise.all([
+            this.fetchPeopleWithStatus(),
+            this.onlines()
+          ]);
 
           this.$socket.emit(`noti_change_friend_request`,{
             sender_id:this.$userProfile.id,

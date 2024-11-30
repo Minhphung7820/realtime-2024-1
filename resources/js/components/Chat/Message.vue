@@ -369,8 +369,10 @@ export default {
               });
           }
         }
+
         if(e.type === 'file'){
-          const objectMessageFile = { sender,
+          const objectMessageFile = {
+              sender,
               content: e.content,
               sender_id:e.sender_id ,
               reactions : [],

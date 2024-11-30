@@ -328,8 +328,10 @@ export default {
   async mounted(){
      this.socket = this.$socket;
      await this.findConversation();
-     await this.getStatusUserOnline();
-     await this.getMessage();
+     await Promise.all([
+        this.getStatusUserOnline(),
+        this.getMessage()
+     ]);
          // Giả sử `msg.content` và `msg.encrypted_group_key` là từ API hoặc socket
      const messages = this.messages.map(async (msg) => {
           if (msg.type === "file") {
@@ -489,8 +491,10 @@ export default {
           };
           this.socket = this.$socket;
           await this.findConversation();
-          await this.getStatusUserOnline();
-          await this.getMessage();
+          await Promise.all([
+              this.getStatusUserOnline(),
+              this.getMessage()
+          ]);
 
           const messages = this.messages.map(async (msg) => {
           if (msg.type === "file") {

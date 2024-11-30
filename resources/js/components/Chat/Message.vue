@@ -2,26 +2,54 @@
 <div class="message-box flex flex-col h-full p-2 sm:p-4">
   <!-- Header: Avatar, Tên, và Trạng thái -->
   <div class="message-header bg-gray-100 p-2 sm:p-4 border-b flex items-center flex-shrink-0">
-    <!-- Avatar -->
-    <img
-      :src="userInfo.avatar"
-      alt="Avatar"
-      class="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 avatar-message"
-    />
-    <!-- Tên và Trạng thái -->
-    <div>
-      <h3 class="text-base sm:text-lg font-bold">{{ userInfo.name }}</h3>
-      <div class="flex items-center">
-        <span
-          :class="userInfo.isOnline ? 'bg-green-500' : 'bg-gray-500'"
-          class="w-3 h-3 rounded-full mr-1"
-        ></span>
-        <span class="text-sm sm:text-base text-gray-600">
-          {{ userInfo.isOnline ? 'Đang hoạt động' : `${userInfo.lastOnlineString}` }}
-        </span>
+      <!-- Avatar -->
+      <img
+        :src="userInfo.avatar"
+        alt="Avatar"
+        class="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 avatar-message"
+      />
+      <!-- Tên và Trạng thái -->
+      <div>
+        <h3 class="text-base sm:text-lg font-bold">{{ userInfo.name }}</h3>
+        <div class="flex items-center">
+          <span
+            :class="userInfo.isOnline ? 'bg-green-500' : 'bg-gray-500'"
+            class="w-3 h-3 rounded-full mr-1"
+          ></span>
+          <span class="text-sm sm:text-base text-gray-600">
+            {{ userInfo.isOnline ? 'Đang hoạt động' : `${userInfo.lastOnlineString}` }}
+          </span>
+        </div>
       </div>
-    </div>
+      <!-- Icon mã hóa -->
+      <div
+        class="ml-auto flex items-center cursor-pointer"
+        @click="toggleEncryptionModal"
+      >
+        <LockClosedIcon class="h-6 w-6 text-gray-500 hover:text-gray-700" />
+        <span class="ml-2 text-sm text-gray-600 hover:text-gray-800">Được mã hóa đầu cuối</span>
+      </div>
   </div>
+
+  <!-- Modal giải thích mã hóa -->
+  <transition name="fade">
+      <div v-if="showEncryptionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-10/12 sm:w-1/2">
+          <h2 class="text-lg font-semibold text-gray-700">Mã hóa đầu cuối</h2>
+          <p class="mt-4 text-gray-600">
+            Các tin nhắn trong cuộc trò chuyện này được mã hóa đầu cuối (E2EE).
+            Điều này có nghĩa là chỉ bạn và người nhận có thể đọc nội dung tin nhắn.
+            Không ai khác, kể cả chúng tôi, có thể truy cập được thông tin này.
+          </p>
+          <button
+            class="mt-6 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            @click="toggleEncryptionModal"
+          >
+            Đóng
+          </button>
+        </div>
+      </div>
+  </transition>
   <div v-if="isLoading" class="loading-container">
       <div class="spinner"></div>
   </div>
@@ -265,7 +293,8 @@ import {
   PhotoIcon,
   PaperClipIcon,
   MicrophoneIcon,
-  XMarkIcon
+  XMarkIcon,
+  LockClosedIcon
   } from '@heroicons/vue/24/solid'
 import EmojiPicker from 'vue3-emoji-picker'
 import {
@@ -293,7 +322,8 @@ export default {
     PhotoIcon,
     PaperClipIcon,
     MicrophoneIcon,
-    XMarkIcon
+    XMarkIcon,
+    LockClosedIcon
   },
   props:{
       dataMessage:{
@@ -303,6 +333,7 @@ export default {
   },
   data() {
     return {
+      showEncryptionModal: false,
       groupKey: null,
       previewItem: null,
       showPreview: false,
@@ -476,6 +507,7 @@ export default {
             // this.socket.emit('leave_conversation', this.userInfo.conversation_id);
             this.socket = null;
           }
+          this.showEncryptionModal = false;
           this.groupKey= null;
           this.previewItem = null;
           this.showPreview = false;
@@ -527,6 +559,9 @@ export default {
     },
   },
   methods: {
+    toggleEncryptionModal() {
+      this.showEncryptionModal = !this.showEncryptionModal; // Bật/tắt modal
+    },
     async decryptFileWhenReceive(object) {
         if (object.type === "file") {
           try {
@@ -1203,6 +1238,30 @@ export default {
 </script>
 
 <style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+.fade-enter-to,
+.fade-leave-from {
+  opacity: 1;
+}
+
+.fixed {
+  position: fixed;
+}
+
+.inset-0 {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
 /* Placeholder cho hình ảnh */
 img.preview-image-message {
   object-fit: cover;

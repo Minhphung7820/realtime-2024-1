@@ -2,53 +2,60 @@
 <div class="message-box flex flex-col h-full p-2 sm:p-4">
   <!-- Header: Avatar, Tên, và Trạng thái -->
   <div class="message-header bg-gray-100 p-2 sm:p-4 border-b flex items-center flex-shrink-0">
-      <!-- Avatar -->
-      <img
-        :src="userInfo.avatar"
-        alt="Avatar"
-        class="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 avatar-message"
-      />
-      <!-- Tên và Trạng thái -->
-      <div>
-        <h3 class="text-base sm:text-lg font-bold">{{ userInfo.name }}</h3>
-        <div class="flex items-center">
-          <span
-            :class="userInfo.isOnline ? 'bg-green-500' : 'bg-gray-500'"
-            class="w-3 h-3 rounded-full mr-1"
-          ></span>
-          <span class="text-sm sm:text-base text-gray-600">
-            {{ userInfo.isOnline ? 'Đang hoạt động' : `${userInfo.lastOnlineString}` }}
-          </span>
-        </div>
+    <!-- Avatar -->
+    <img
+      :src="userInfo.avatar"
+      alt="Avatar"
+      class="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 avatar-message"
+    />
+    <!-- Tên, Trạng thái và Icon mã hóa -->
+    <div class="flex flex-col">
+      <!-- Tên -->
+      <h3 class="text-base sm:text-lg font-bold">{{ userInfo.name }}</h3>
+      <!-- Trạng thái online -->
+      <div class="flex items-center">
+        <span
+          :class="userInfo.isOnline ? 'bg-green-500' : 'bg-gray-500'"
+          class="w-3 h-3 rounded-full mr-1"
+        ></span>
+        <span class="text-sm sm:text-base text-gray-600">
+          {{ userInfo.isOnline ? 'Đang hoạt động' : `${userInfo.lastOnlineString}` }}
+        </span>
       </div>
       <!-- Icon mã hóa -->
       <div
-        class="ml-auto flex items-center cursor-pointer"
+        class="flex items-center mt-1 cursor-pointer"
         @click="toggleEncryptionModal"
       >
-        <LockClosedIcon class="h-6 w-6 text-gray-500 hover:text-gray-700" />
+        <LockClosedIcon class="h-4 w-4 text-gray-500 hover:text-gray-700" />
         <span class="ml-2 text-sm text-gray-600 hover:text-gray-800">Được mã hóa đầu cuối</span>
       </div>
+    </div>
   </div>
 
   <!-- Modal giải thích mã hóa -->
   <transition name="fade">
-      <div v-if="showEncryptionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 w-10/12 sm:w-1/2">
-          <h2 class="text-lg font-semibold text-gray-700">Mã hóa đầu cuối</h2>
-          <p class="mt-4 text-gray-600">
-            Các tin nhắn trong cuộc trò chuyện này được mã hóa đầu cuối (E2EE).
-            Điều này có nghĩa là chỉ bạn và người nhận có thể đọc nội dung tin nhắn.
-            Không ai khác, kể cả chúng tôi, có thể truy cập được thông tin này.
-          </p>
+    <div
+      v-if="showEncryptionModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-lg p-4 sm:p-6 w-11/12 max-w-md">
+        <h2 class="text-lg font-semibold text-gray-700 text-center">Mã hóa đầu cuối</h2>
+        <p class="mt-4 text-gray-600 text-sm sm:text-base text-justify">
+          Các tin nhắn trong cuộc trò chuyện này được mã hóa đầu cuối (E2EE).
+          Điều này có nghĩa là chỉ bạn và người nhận có thể đọc nội dung tin nhắn.
+          Không ai khác, kể cả chúng tôi, có thể truy cập được thông tin này.
+        </p>
+        <div class="flex justify-center mt-6">
           <button
-            class="mt-6 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            class="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
             @click="toggleEncryptionModal"
           >
             Đóng
           </button>
         </div>
       </div>
+    </div>
   </transition>
   <div v-if="isLoading" class="loading-container">
       <div class="spinner"></div>
@@ -1238,6 +1245,24 @@ export default {
 </script>
 
 <style scoped>
+/* Đảm bảo modal không vượt quá max-width */
+.max-w-md {
+  max-width: 400px; /* Giảm chiều rộng tối đa */
+}
+
+/* Chỉnh padding và font-size */
+.text-sm {
+  font-size: 0.875rem; /* Font nhỏ hơn */
+}
+
+.text-base {
+  font-size: 1rem;
+}
+
+.sm\:p-6 {
+  padding: 1.5rem; /* Padding nhỏ hơn */
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;

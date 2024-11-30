@@ -258,7 +258,7 @@
 
 <script>
 import { onlineStore } from "../../stores/UserOnline.js";
-import {formatTimeDifference,encodeQueryParams} from '../../utils/functions.js';
+import {formatTimeDifference,encodeQueryParams,debounce} from '../../utils/functions.js';
 import { UserPlusIcon,UsersIcon,UserGroupIcon,GlobeAltIcon } from '@heroicons/vue/24/solid';
 
 export default {
@@ -405,14 +405,14 @@ export default {
         console.error('Failed to fetch people or online users:', error);
       }
     },
-    openChat(userId, type) {
+    openChat: debounce( function (userId, type) {
       if (this.$parent.dataMessage.id === userId && this.$parent.dataMessage.type === type) {
         // Nếu người dùng đang mở chính họ, không làm gì cả
         return;
       }
       this.$router.push({ query: {messages: encodeQueryParams({id:userId,type})}});
       this.$emit('open-chat', userId, type); // Phát sự kiện open-chat lên cha
-    },
+    }, 500),
     async changeStatusRequestFriend(requestId,status){
           this.isHandlingChangeStatusRequest[requestId] = status;
          try {

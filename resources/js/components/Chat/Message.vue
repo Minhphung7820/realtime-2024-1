@@ -160,6 +160,9 @@
         </div>
       </div>
     </div>
+    <div v-if="isLoadingMore" class="loading-more-indicator flex justify-center items-center">
+      <div class="loading-spinner"></div>
+   </div>
   </div>
 
   <!-- Input: Nhập và gửi tin nhắn -->
@@ -956,23 +959,21 @@ export default {
     },
     scrollLoadMoreMessage() {
       const messageContent = this.$refs.messageContent;
-      if(!messageContent) return;
-      const isAtTop = Math.ceil(-(messageContent.scrollTop) + messageContent.clientHeight + 1) >= messageContent.scrollHeight;
+      if (!messageContent) return;
 
-      if (
-        isAtTop // Khi cuộn lên đầu
-         &&
-        this.hasMoreMessages && // Nếu vẫn còn tin nhắn để tải
-        !this.isLoadingMore // Đảm bảo không bị tải nhiều lần cùng lúc
-      ) {
-        this.isLoadingMore = true;
+      const isAtTop =
+        Math.ceil(-messageContent.scrollTop + messageContent.clientHeight + 1) >=
+        messageContent.scrollHeight;
+
+      if (isAtTop && this.hasMoreMessages && !this.isLoadingMore) {
+        this.isLoadingMore = true; // Hiển thị vòng tròn xoay
+
         const oldScrollTop = messageContent.scrollTop;
-        // Tải thêm tin nhắn
         this.getMessage(this.currentPage + 1).finally(() => {
-          this.isLoadingMore = false;
+          this.isLoadingMore = false; // Ẩn vòng tròn xoay sau khi tải xong
         });
-        // đang scroll chỗ nào giữ nguyên vị trí đó
-        messageContent.scrollTop = oldScrollTop;
+
+        messageContent.scrollTop = oldScrollTop; // Giữ vị trí cuộn
       }
     },
     async scrollToBottom() {
@@ -1245,6 +1246,33 @@ export default {
 </script>
 
 <style scoped>
+.loading-more-indicator {
+  position: relative;
+  height: 50px; /* Chiều cao khoảng trống để hiển thị vòng tròn */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1); /* Viền mờ */
+  border-top: 4px solid #3498db; /* Viền màu xanh */
+  border-radius: 50%; /* Tạo hình tròn */
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite; /* Hiệu ứng xoay */
+}
+
+/* Keyframes cho hiệu ứng xoay */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 /* Đảm bảo modal không vượt quá max-width */
 .max-w-md {
   max-width: 400px; /* Giảm chiều rộng tối đa */

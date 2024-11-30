@@ -60,7 +60,7 @@
 
 <script>
 import { onlineStore } from "../../stores/UserOnline.js";
-import {encodeQueryParams} from '../../utils/functions.js';
+import {encodeQueryParams,debounce} from '../../utils/functions.js';
 import { ExclamationCircleIcon } from '@heroicons/vue/24/solid';
 import {
     importPrivateKey,
@@ -215,7 +215,7 @@ export default {
         }
       }
     },
-    async openChat(userId, type) {
+    openChat: debounce(async function (userId, type) {
       if (this.$parent.dataMessage.id === userId && this.$parent.dataMessage.type === type) {
         // Nếu người dùng đang mở chính họ, không làm gì cả
         return;
@@ -228,7 +228,7 @@ export default {
       }
       //
       this.$emit('open-chat', userId, type); // Phát sự kiện open-chat lên cha
-    },
+   }, 500),
     async getConversations() {
       try {
         const conversationResponse = await this.$axios.get(`/api/get-list-conversation`);

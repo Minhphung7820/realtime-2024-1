@@ -1,7 +1,7 @@
 <template>
   <div>
     <h3 class="font-bold text-lg mb-2">Cuộc trò chuyện</h3>
-    <div v-if="conversations.length">
+    <div v-if="conversations.length > 0" class="min-h-[200px]">
       <transition-group
         name="smooth-move"
         tag="ul"
@@ -52,7 +52,7 @@
         </li>
       </transition-group>
     </div>
-    <div v-else class="text-center text-gray-500 py-4">
+    <div v-else class="text-center text-gray-500 py-4 min-h-[200px]">
       Chưa có cuộc trò chuyện nào
     </div>
   </div>

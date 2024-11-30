@@ -43,7 +43,7 @@
 
 
     <!-- Nội dung tab -->
-    <div v-if="activeTab === 'online'">
+    <div v-if="activeTab === 'online'" class="min-h-[400px]">
       <!-- Danh sách Đang hoạt động -->
       <div v-if="isLoading" class="loading-container">
         <div class="spinner"></div>
@@ -68,10 +68,11 @@
             <h4 class="font-semibold text-sm sm:text-base truncate">{{ person.name }}</h4>
           </div>
         </li>
+        <li v-if="onlineUsers.length === 0" class="text-center py-4 text-gray-500">Chưa có ai</li>
       </ul>
     </div>
     <!-- Nội dung các tab -->
-    <div v-if="activeTab === 'friends'">
+    <div v-if="activeTab === 'friends'" class="min-h-[400px]">
       <!-- Danh sách bạn bè (cũ) -->
       <div v-if="isLoading" class="loading-container">
         <div class="spinner"></div>
@@ -102,6 +103,7 @@
             </p> -->
           </div>
         </li>
+        <li v-if="onlineUsers.length === 0" class="text-center py-4 text-gray-500">Chưa có ai</li>
       </ul>
        <!-- Nút Xem thêm -->
       <div class="flex justify-center mt-4">
@@ -127,7 +129,7 @@
       </div>
     </div>
 
-    <div v-else-if="activeTab === 'requests'">
+    <div v-else-if="activeTab === 'requests'" class="min-h-[400px]">
       <!-- UI Yêu cầu kết bạn -->
       <ul>
         <li
@@ -179,10 +181,11 @@
             </div>
           </div>
         </li>
+        <li v-if="friendRequests.length === 0" class="text-center py-4 text-gray-500">Chưa có ai</li>
       </ul>
     </div>
 
-    <div v-else-if="activeTab === 'search'">
+    <div v-else-if="activeTab === 'search'" class="min-h-[400px]">
       <!-- UI Tìm kiếm -->
       <div class="search-container mb-4">
         <input

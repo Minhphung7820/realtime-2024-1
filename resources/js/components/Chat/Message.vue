@@ -80,7 +80,7 @@
           <!-- Kiểm tra nếu msg.content là mảng -->
           <div v-if="msg.type === 'file'">
               <div v-if="!msg.decryptionFiles || msg.decryptionFiles.length === 0">
-                  <div v-for="(item, index) in msg.content" :key="index">
+                  <div v-for="(_, index) in msg.content" :key="index">
                     <img
                       src="https://via.placeholder.com/150?text=Loading..."
                       alt="Loading placeholder"
@@ -118,7 +118,7 @@
             </div> -->
           </div>
              <!-- Nút thêm reaction (hiển thị khi isActive là true) -->
-          <div
+          <div v-if="msg.isFake"
             class="reaction-button-add-emoji hidden group-hover:block"
           >
            +
@@ -422,21 +422,66 @@ export default {
           }
         }
 
-        if(e.type === 'file'){
-          const objectMessageFile = {
+        if (e.type === 'file') {
+          if (parseInt(e.sender_id) === parseInt(this.$userProfile.id)) {
+            const fakeFileId = `fake_${Date.now()}`;
+
+            const fakeMessage = {
               sender,
               content: e.content,
-              sender_id:e.sender_id ,
-              reactions : [],
-              total_reactions : 0,
+              sender_id: e.sender_id,
+              reactions: [],
+              total_reactions: 0,
+              id: fakeFileId,
+              type: e.type,
+              encrypted_group_key: e.encrypted_group_key,
+              isFake: true
+            };
+
+            this.messages.unshift(fakeMessage);
+
+            try {
+              const objectMessageFile = {
+                sender,
+                content: e.content,
+                sender_id: e.sender_id,
+                reactions: [],
+                total_reactions: 0,
+                id: e.message_id,
+                type: e.type,
+                encrypted_group_key: e.encrypted_group_key,
+              };
+
+              const objectMessageFileDecrypted = await this.decryptFileWhenReceive(objectMessageFile);
+
+              const fakeIndex = this.messages.findIndex((msg) => msg.id === fakeFileId);
+              if (fakeIndex !== -1) {
+                this.messages.splice(fakeIndex, 1);
+              }
+
+              this.messages.unshift(objectMessageFileDecrypted);
+            } catch (error) {
+              console.error('Error decrypting file:', error);
+            }
+          } else {
+            // Trường hợp bình thường không áp dụng logic "fake"
+            const objectMessageFile = {
+              sender,
+              content: e.content,
+              sender_id: e.sender_id,
+              reactions: [],
+              total_reactions: 0,
               id: e.message_id,
-              type : e.type,
-              encrypted_group_key: e.encrypted_group_key
+              type: e.type,
+              encrypted_group_key: e.encrypted_group_key,
+            };
+
+            const objectMessageFileDecrypted = await this.decryptFileWhenReceive(objectMessageFile);
+
+            // Thêm đối tượng thật vào mảng messages
+            this.messages.unshift(objectMessageFileDecrypted);
           }
-          const objectMessageFileDecrypted = await this.decryptFileWhenReceive(objectMessageFile);
-          this.messages.unshift(objectMessageFileDecrypted);
         }
-        // Cuộn xuống cuối và tự động kích hoạt trigger nếu cần
         await this.scrollToBottom();
       }
     });

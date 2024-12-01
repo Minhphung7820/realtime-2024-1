@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\FileUploadController;
 
+Route::get('read-file', [FileUploadController::class, 'readFile']);
 Route::post('/upload-file', [FileUploadController::class, 'uploadFile'])->middleware('auth:api');
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);

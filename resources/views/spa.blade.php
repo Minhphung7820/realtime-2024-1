@@ -10,6 +10,7 @@
 
 <body>
   <div id="app"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@latest/dist/ffmpeg.min.js"></script>
   <script>
     window.baseURL = "{{ env('APP_URL') }}";
   </script>

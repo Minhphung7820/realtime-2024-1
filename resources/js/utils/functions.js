@@ -597,3 +597,88 @@ export async function testEncryptionDecryption() {
         console.error("Error in encryption/decryption:", error);
     }
 }
+
+export async function compressImage(file, quality = 0.7, maxWidth = 1024) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            const img = new Image();
+            img.src = event.target.result;
+
+            img.onload = function () {
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+
+                const scaleSize = maxWidth / img.width;
+                canvas.width = maxWidth;
+                canvas.height = img.height * scaleSize;
+
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                canvas.toBlob(
+                    (blob) => {
+                        // Chuyển Blob thành File
+                        const compressedFile = new File([blob], file.name, {
+                            type: "image/jpeg",
+                            lastModified: Date.now(),
+                        });
+
+                        resolve(compressedFile); // Trả về file nén
+                    },
+                    "image/jpeg",
+                    quality
+                );
+            };
+
+            img.onerror = function (error) {
+                reject(error);
+            };
+        };
+
+        reader.onerror = function (error) {
+            reject(error);
+        };
+
+        reader.readAsDataURL(file);
+    });
+}
+
+export async function compressVideo(file, bitrate = "500k") {
+    const ffmpeg = createFFmpeg({ log: true });
+    await ffmpeg.load();
+
+    const inputName = "input.mp4";
+    const outputName = "output.mp4";
+
+    // Ghi file đầu vào vào bộ nhớ ảo của ffmpeg
+    ffmpeg.FS("writeFile", inputName, await fetchFile(file));
+
+    // Chạy lệnh ffmpeg để nén video
+    await ffmpeg.run(
+        "-i", inputName, // File đầu vào
+        "-b:v", bitrate, // Giảm bitrate để giảm dung lượng
+        "-preset", "fast", // Tối ưu tốc độ xử lý
+        outputName // File đầu ra
+    );
+
+    // Lấy dữ liệu video đã nén
+    const compressedData = ffmpeg.FS("readFile", outputName);
+    const compressedBlob = new Blob([compressedData.buffer], { type: "video/mp4" });
+
+    // Tạo File từ Blob
+    const compressedFile = new File([compressedBlob], file.name, { type: "video/mp4" });
+
+    return compressedFile; // Trả về File nén
+}
+
+export async function compressFile(file) {
+    const mimeType = file.type;
+
+    if (mimeType.startsWith("image/")) {
+        return await compressImage(file, 0.5); // Nén ảnh với chất lượng 70%
+    } else if (mimeType.startsWith("video/")) {
+        return await compressVideo(file, "500k"); // Nén video với bitrate 500k
+    } else {
+        throw new Error("File không phải là ảnh hoặc video");
+    }
+}

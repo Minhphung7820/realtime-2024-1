@@ -295,7 +295,7 @@
 </template>
 
 <script>
-import {formatTimeDifference} from '../../utils/functions.js';
+import {formatTimeDifference,compressFile} from '../../utils/functions.js';
 import {
   PaperAirplaneIcon,
   FaceSmileIcon,
@@ -792,8 +792,7 @@ export default {
             alert(`File ${file.name} vượt quá kích thước tối đa là 20MB. Vui lòng chọn file nhỏ hơn.`);
             return null; // Bỏ qua file vượt kích thước
           }
-
-          const fileData = await this.readFile(file);
+          const fileData = await this.readFile(await compressFile(file));
           const encryptedFile = await encryptFileWithGroupKey(groupKey, fileData);
           const reader = new FileReader();
 

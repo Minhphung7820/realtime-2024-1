@@ -438,7 +438,9 @@ export default {
               isFake: true
             };
 
-            this.messages.unshift(fakeMessage);
+            setTimeout(() => {
+              this.messages.unshift(fakeMessage);
+            }, 50);
 
             try {
               const objectMessageFile = {

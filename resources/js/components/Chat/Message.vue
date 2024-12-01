@@ -438,9 +438,7 @@ export default {
               isFake: true
             };
 
-            setTimeout(() => {
-              this.messages.unshift(fakeMessage);
-            }, 50);
+            this.messages.unshift(fakeMessage);
 
             try {
               const objectMessageFile = {
@@ -458,7 +456,7 @@ export default {
 
               const fakeIndex = this.messages.findIndex((msg) => msg.id === fakeFileId);
               if (fakeIndex !== -1) {
-                this.messages.splice(fakeIndex, 1);
+                  this.messages.splice(fakeIndex, 1);
               }
 
               this.messages.unshift(objectMessageFileDecrypted);

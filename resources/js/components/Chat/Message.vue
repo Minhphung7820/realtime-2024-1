@@ -643,12 +643,12 @@ export default {
                         throw new Error('Invalid data type for value.url');
                     }
                     // Giải mã file
-                    const decryptedFile = await decryptFileWithGroupKey(encryptedBlob, groupKey);
+                    const { fileName, fileContent } = await decryptFileWithGroupKey(encryptedBlob, groupKey);
 
                     return {
                         ...value,
                         url: URL.createObjectURL(
-                             new Blob([decryptedFile], { type: value.type || 'application/octet-stream' })
+                             new Blob([fileContent], { type: value.type || 'application/octet-stream' })
                         ), // Tạo URL cho file đã giải mã
                     };
                 } catch (error) {

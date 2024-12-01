@@ -467,15 +467,25 @@ export async function generateGroupKey() {
     return key;
 }
 
-export async function encryptFileWithGroupKey(groupKey, fileData) {
+export async function encryptFileWithGroupKey(groupKey, fileData, fileName = null) {
     const iv = crypto.getRandomValues(new Uint8Array(12)); // Random IV
+
+    // Kết hợp tên file và nội dung file thành một JSON string
+    const fileObject = {
+        name: fileName, // Tên file
+        content: Array.from(new Uint8Array(fileData)), // Chuyển nội dung file thành mảng số
+    };
+    const fileString = JSON.stringify(fileObject);
+
+    // Mã hóa dữ liệu file (tên + nội dung)
     const encryptedData = await crypto.subtle.encrypt({
         name: "AES-GCM",
         iv,
     },
         groupKey,
-        fileData // fileData giờ đây là ArrayBuffer
+        new TextEncoder().encode(fileString) // Convert string to ArrayBuffer
     );
+
     const encryptedUint8Array = new Uint8Array(encryptedData);
     const combinedData = new Blob([iv, encryptedUint8Array], { type: "application/octet-stream" });
 
@@ -486,15 +496,26 @@ export async function decryptFileWithGroupKey(encryptedBlob, groupKey) {
     try {
         const arrayBuffer = await encryptedBlob.arrayBuffer();
 
-        const iv = new Uint8Array(arrayBuffer.slice(0, 12)); // Tách IV
-        const encryptedData = arrayBuffer.slice(12); // Tách dữ liệu mã hóa
+        // Tách IV và dữ liệu mã hóa
+        const iv = new Uint8Array(arrayBuffer.slice(0, 12));
+        const encryptedData = arrayBuffer.slice(12);
 
+        // Giải mã dữ liệu
         const decryptedData = await crypto.subtle.decrypt({
             name: "AES-GCM",
-            iv, // IV phải là Uint8Array
+            iv,
         }, groupKey, encryptedData);
 
-        return decryptedData; // Trả về ArrayBuffer
+        // Convert ArrayBuffer thành string JSON
+        const fileString = new TextDecoder().decode(decryptedData);
+
+        // Parse JSON để lấy tên và nội dung file
+        const fileObject = JSON.parse(fileString);
+
+        const fileName = fileObject.name; // Lấy tên file
+        const fileContent = new Uint8Array(fileObject.content); // Lấy nội dung file
+
+        return { fileName, fileContent }; // Trả về đối tượng chứa tên và nội dung file
     } catch (error) {
         throw error; // Báo lỗi nếu có vấn đề
     }

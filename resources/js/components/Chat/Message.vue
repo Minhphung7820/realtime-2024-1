@@ -423,7 +423,8 @@ export default {
         }
 
         if (e.type === 'file') {
-          if (parseInt(e.sender_id) === parseInt(this.$userProfile.id)) {
+          setTimeout( async () => {
+              if (parseInt(e.sender_id) === parseInt(this.$userProfile.id)) {
             const fakeFileId = `fake_${Date.now()}`;
 
             const fakeMessage = {
@@ -481,6 +482,7 @@ export default {
             // Thêm đối tượng thật vào mảng messages
             this.messages.unshift(objectMessageFileDecrypted);
           }
+          }, 50);
         }
         await this.scrollToBottom();
       }

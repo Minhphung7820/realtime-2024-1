@@ -644,7 +644,10 @@ export async function compressImage(file, quality = 0.7, maxWidth = 1024) {
 }
 
 export async function compressVideo(file, bitrate = "500k") {
-    const ffmpeg = createFFmpeg({ log: true });
+    // Khởi tạo FFmpeg từ CDN
+    const ffmpeg = window.FFmpeg.createFFmpeg({ log: true });
+    const fetchFile = window.FFmpeg.fetchFile; // Lấy fetchFile từ FFmpeg CDN
+
     await ffmpeg.load();
 
     const inputName = "input.mp4";
